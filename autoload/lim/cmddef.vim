@@ -72,7 +72,7 @@ function! s:Cmdcmpl.get_ordinal(...) "{{{
   return self.save_ordinals[ignorepat]
 endfunction
 "}}}
-function! s:Cmdcmpl.should_complete_options() "{{{
+function! s:Cmdcmpl.should_optcmpl() "{{{
   let pat = get(self.funcopts, 'optpat', '')
   return pat!='' && self.arglead =~# pat
 endfunction
@@ -83,7 +83,7 @@ endfunction
 "}}}
 function! s:Cmdcmpl.get_arg(pat, ...) "{{{
   let default = get(a:, 1, '')
-  let ordinal = get(a:, 2, -1)
+  let ordinal = get(a:, 2, 0)
   let mchs = []
   for been in self.beens
     let mchs = matchlist(been, a:pat)
@@ -91,7 +91,7 @@ function! s:Cmdcmpl.get_arg(pat, ...) "{{{
       break
     end
   endfor
-  return mchs==[] ? default : !ordinal ? mchs : ordinal==-1 ? mchs[0] : get(mchs, ordinal, '')
+  return mchs==[] ? default : ordinal==-1 ? mchs : get(mchs, ordinal, '')
 endfunction
 "}}}
 function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{

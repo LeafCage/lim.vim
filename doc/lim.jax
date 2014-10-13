@@ -75,7 +75,7 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	{ignorepat}が '^-' だと結果が2になる。{ignorepat}が指定なしならば3。
 	これは - で始まる引数はオプションとして無視したいときなどに役立つ。
 
-	should_complete_options()
+	should_optcmpl()
 	{funcopts}にキー optpat が渡されている必要がある。
 	現在のArgleadが optpat パターンにマッチすれば1を返す。
 
@@ -86,8 +86,8 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	入力済みのコマンドライン文字列から{pat}に一番初めにマッチした文字列を
 	返す。マッチするものがなければ{default}を返す。
 	1～9までの数値{ordinal}を渡すとカッコ|\(\)|でまとめられたパターンから
-	その番目のマッチ返す。0を渡すと|matchlist()|のようにマッチのリストを返
-	す。
+	その番目のマッチ返す。-1を渡すと|matchlist()|のようにマッチのリストを
+	返す。
 
 	mill_candidates({candidates}, [{funcopts}])
 	{candidates}はリストであり、 ["cand1", "cand2", "cand3"] のように補完
