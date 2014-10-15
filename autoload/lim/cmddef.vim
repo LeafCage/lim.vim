@@ -3,41 +3,7 @@ let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
 let s:TYPE_NUM = type(0)
-"Misc:
-function! s:_parse_option(arg, optionpat, optdict, suppresserr) "{{{
-  let [opt, val] = matchlist(a:arg, a:optionpat)[1:2]
-  if has_key(a:optdict, opt)
-    let a:optdict[opt] = type(a:optdict[opt])==s:TYPE_NUM && val=='' ? 1 : val
-    return
-  end
-  if !a:suppresserr
-    echoerr "unknown option `". opt. "'"
-  end
-endfunction
-"}}}
-function! s:_parse_switch(arg, switchpat, switchdict, suppresserr) "{{{
-  let [swts, val] = matchlist(a:arg, a:switchpat)[1:2]
-  if val==''
-    for switch in split(swts, '\zs')
-      if has_key(a:switchdict, switch)
-        let a:switchdict[switch] = 1
-        continue
-      end
-      if !a:suppresserr
-        echoerr "unknown switch `". switch. "'"
-      end
-    endfor
-  else
-    if has_key(a:switchdict, swts)
-      let a:switchdict[swts] = val
-      return
-    end
-    if !a:suppresserr
-      echoerr "unknown switch `". swts. "'"
-    end
-  end
-endfunction
-"}}}
+let s:TYPE_DICT = type({})
 
 
 "=============================================================================
@@ -120,26 +86,47 @@ endfunction
 
 "--------------------------------------
 function! lim#cmddef#parse_options(args, optdict, ...) "{{{
-  let switchdict = get(a:, 1, {})
-  let addinfo = get(a:, 2, {})
-  let optionpat = get(addinfo, 'optionpat', '\m^--\([[:alnum:]-]\+\)\%(=\(.*\)\)\?')
-  let switchpat = get(addinfo, 'switchpat', '\m^-\([[:alnum:]]\+\)\%(=\(.*\)\)\?')
-  let suppresserr = get(addinfo, 'suppresserr', 0)
-  let i = len(a:args)
-  while i
-    let i -= 1
-    let arg = a:args[i]
-    if arg =~ optionpat
-      call s:_parse_option(arg, optionpat, a:optdict, suppresserr)
-      unlet a:args[i]
-    elseif arg =~ switchpat
-      call s:_parse_switch(arg, switchpat, switchdict, suppresserr)
-      unlet a:args[i]
+  let funcopts = get(a:, 1, {})
+  let longbgnpat = get(funcopts, 'longbgnpat', '--')
+  let shortbgnpat = get(funcopts, 'shortbgnpat', '-')
+  let assignpat = get(funcopts, 'assignpat', '=')
+  let endpat = '\%('.assignpat.'\(.*\)\)\?$'
+  let argsrmlong = filter(copy(a:args), 'v:val !~# "^".longbgnpat')
+  let ret = {}
+  for [key, val] in items(a:optdict)
+    let valdict = type(val)!=s:TYPE_DICT ? {'default': val} : val
+    unlet val
+    let pats = has_key(valdict, 'pats') ? valdict.pats : [longbgnpat. key]
+    for pat in pats
+      if pat!~#'^'.longbgnpat && pat=~#'^'.shortbgnpat.'.$'
+        let shortchr = matchstr(pat, '^'.shortbgnpat.'\zs.$')
+        let i = match(argsrmlong, '^'.shortbgnpat.'.\{-}'.shortchr.'.\{-}'.endpat)
+      else
+        let shortchr = ''
+        let i = match(a:args, '^'.pat. endpat)
+      end
+      if i!=-1
+        break
+      end
+    endfor
+    if i==-1
+      let ret[key] = get(valdict, 'default', 0)
+      continue
+    elseif shortchr==''
+      let optval = substitute(remove(a:args, i), '^'.pat, '', '')
+    else
+      let optval = matchstr(a:args[i], shortchr. '\zs'.assignpat.'.*$')
+      let a:args[i] = substitute(a:args[i], '^'.shortbgnpat.'.\{-}\zs'.shortchr. (optval=='' ? '' : assignpat.'.*'), '', '')
+      if a:args[i] ==# shortbgnpat
+        unlet a:args[i]
+      end
     end
-  endwhile
-  return [a:optdict, switchdict]
+    let ret[key] = optval=='' ? 1 : matchstr(optval, '^'.assignpat.'\zs.*')
+  endfor
+  return ret
 endfunction
 "}}}
+
 
 "=============================================================================
 "END "{{{1
