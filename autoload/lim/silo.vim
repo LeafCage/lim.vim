@@ -187,6 +187,10 @@ function! s:Silo.exclude(where, ...) "{{{
   throw 'silo: invalid format > '. stirng(fmt)
 endfunction
 "}}}
+function! s:Silo.create_nextkey(field) "{{{
+  return max(self.select({}, [a:field])) +1
+endfunction
+"}}}
 function! s:Silo.commit() "{{{
   if !self.is_changed()
     return

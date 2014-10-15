@@ -325,6 +325,10 @@ lim#silo#newSilo({name}, {fields})		*lim#silo#newSilo()*
 	きる。自身を返す。どのレコードの値をソート時に優先するかを指定したい場
 	合は、rearrange() メソッドでフィールドの並びを変更すること。
 
+	create_nextkey({field})
+	フィールド名{field}のレコードの中で最大のものに1を加えた数を返す。この
+	レコードは数字で構成されている必要がある。
+
 	rearrange({destfields})
 	フィールドのリスト{destfields}の順にフィールドの並び順を変更する。自身
 	を返す。
