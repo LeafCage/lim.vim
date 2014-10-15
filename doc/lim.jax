@@ -311,8 +311,9 @@ lim#silo#newSilo({name}, {fields})		*lim#silo#newSilo()*
 	select() メソッドが肯定なのに対しこれは否定で検索する。
 
 	insert({record})
-	siloに{record}を追加する。{record}はリストであり、その要素数は{fields}
-	で渡した項目数と同数でなければならない。自身を返す。
+	自身を返す。{record}が既に登録されているものと重複しないならばsiloに
+	{record}を追加する。{record}はリストであり、その要素数は{fields}で渡し
+	た項目数と同数でなければならない。
 
 	delete({where})
 	siloから条件{where}にマッチするレコードを削除する。{where}は辞書または
@@ -321,8 +322,8 @@ lim#silo#newSilo({name}, {fields})		*lim#silo#newSilo()*
 	れに完全一致するものが検索される。
 
 	sort([{func}])
-	レコードをソートする。{func}には|sort()|で使われるのと同じものを利用で
-	きる。自身を返す。どのレコードの値をソート時に優先するかを指定したい場
+	自身を返す。レコードをソートする。{func}には|sort()|で使われるのと同じ
+	ものを利用できる。どのレコードの値をソート時に優先するかを指定したい場
 	合は、rearrange() メソッドでフィールドの並びを変更すること。
 
 	create_nextkey({field})

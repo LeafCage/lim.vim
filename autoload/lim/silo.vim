@@ -202,6 +202,9 @@ function! s:Silo.commit() "{{{
 endfunction
 "}}}
 function! s:Silo.insert(rec) "{{{
+  if self.has(a:rec)
+    return self
+  end
   if len(a:rec)!=self.fieldslen
     echoerr 'silo : invalid insert >' a:rec
     return self
