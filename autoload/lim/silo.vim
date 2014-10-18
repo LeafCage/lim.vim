@@ -157,7 +157,8 @@ endfunction
 function! s:Silo.select_distinct(where, ...) "{{{
   let records = call(self.select, [a:where] + a:000, self)
   try
-    return lim#misc#uniqify(records)
+    let ret = lim#misc#uniqify(records)
+    return ret
   catch /E117:/
     echoerr 'silo: select_distinct() depends misc-module > misc-module is not found.'
     return records

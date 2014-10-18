@@ -29,7 +29,8 @@ endfunction
 "}}}
 function! s:_envimkeybind(str) "{{{
   try
-    return has_key(s:, 'disable_str2vimkeybind') ? a:str : lim#str2vimkeybind#str2vimkeybind(a:str)
+    let ret = has_key(s:, 'disable_str2vimkeybind') ? a:str : lim#str2vimkeybind#str2vimkeybind(a:str)
+    return ret
   catch /E117:/
     let s:disable_str2vimkeybind = 1
     return a:str
