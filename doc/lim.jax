@@ -49,8 +49,9 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	省略可能な引数{funcopts}は辞書であり、次のキーを持たせることができる。
 	--------~
 	optpat		(文字列)
+		既定値: '^--\?[''"[:alnum:]]'
 		コマンド引数のうちオプションとして解釈されるものを表すパターン
-		。'^-' だと '-' で始まるものがコマンドオプションと見なされる。
+		。マッチする引数がコマンドオプションと見なされる。
 
 	conflicts	(リストインリスト)
 		文字列のリストインリストで同時に指定することが出来ない引数のグ
@@ -89,8 +90,7 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	self.argleadに一致する。
 
 	should_optcmpl()
-	{funcopts}にキー optpat が渡されている必要がある。
-	現在のArgleadが optpat パターンにマッチすれば1を返す。
+	現在のArgleadが{funcopts}の optpat パターンにマッチすれば1を返す。
 
 	is_matched({pat})
 	現在のArgleadがパターン{pat}にマッチすれば1を返す。

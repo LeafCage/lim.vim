@@ -12,6 +12,7 @@ let s:Cmdcmpl = {}
 function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj = copy(s:Cmdcmpl)
   let obj.funcopts = get(a:, 1, {})
+  let obj.funcopts.optpat = get(obj.funcopts, 'optpat', '^--\?[''"[:alnum:]]')
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj.is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
@@ -29,7 +30,7 @@ endfunction
 "}}}
 function! s:Cmdcmpl.get_settlednum(...) "{{{
   let NULL = "\<C-n>"
-  let ignorepat = a:0 ? a:1 : get(self.funcopts, 'optpat', '')
+  let ignorepat = a:0 ? a:1 : self.funcopts.optpat
   let ignorepat = ignorepat=='' ? NULL : ignorepat
   if has_key(self.save_settlednums, ignorepat)
     return self.save_settlednums[ignorepat]
@@ -44,7 +45,7 @@ function! s:Cmdcmpl.get_settlednum(...) "{{{
 endfunction
 "}}}
 function! s:Cmdcmpl.should_optcmpl() "{{{
-  let pat = get(self.funcopts, 'optpat', '')
+  let pat = self.funcopts.optpat
   return pat!='' && self.arglead =~# pat
 endfunction
 "}}}
