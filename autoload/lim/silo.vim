@@ -203,14 +203,12 @@ function! s:Silo.commit() "{{{
 endfunction
 "}}}
 function! s:Silo.insert(rec) "{{{
-  if self.has(a:rec)
-    return self
+  if type(get(a:rec, 0, []))==s:TYPE_STR
+    return self._insert(a:rec)
   end
-  if len(a:rec)!=self.fieldslen
-    echoerr 'silo : invalid insert >' a:rec
-    return self
-  end
-  call add(self.records, join(a:rec, s:SEP))
+  for rec in a:rec
+    call self._insert(rec)
+  endfor
   return self
 endfunction
 "}}}
@@ -250,6 +248,18 @@ function! s:Silo.rearrange(destfields) "{{{
 endfunction
 "}}}
 function! s:Silo.replace(field, src, dest) "{{{
+endfunction
+"}}}
+function! s:Silo._insert(rec) "{{{
+  if self.has(a:rec)
+    return self
+  end
+  if len(a:rec)!=self.fieldslen
+    echoerr 'silo : invalid insert >' a:rec
+    return self
+  end
+  call add(self.records, join(a:rec, s:SEP))
+  return self
 endfunction
 "}}}
 
