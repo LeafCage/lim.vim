@@ -2,7 +2,7 @@ if exists('s:save_cpo')| finish| endif
 let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
-let s:TYPE_NUM = type(0)
+let s:TYPE_LIST = type([])
 let s:TYPE_DICT = type({})
 
 
@@ -20,6 +20,10 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.arglead = obj.is_on_edge ? '' : obj.words_til_crs[-1]
   let obj.save_ordinals = {}
   return obj
+endfunction
+"}}}
+function! s:Cmdcmpl.get_arglead() "{{{
+  return self.arglead
 endfunction
 "}}}
 function! s:Cmdcmpl.get_ordinal(...) "{{{
@@ -60,19 +64,19 @@ function! s:Cmdcmpl.get_arg(pat, ...) "{{{
   return mchs==[] ? default : ordinal==-1 ? mchs : get(mchs, ordinal, '')
 endfunction
 "}}}
-function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
-  let funcopts = get(a:, 1, {})
-  let conflicts = has_key(funcopts, 'conflicts') ? funcopts.conflicts : get(self.funcopts, 'conflicts', [])
-  let reuses = get(funcopts, 'reuses', [])
-  let reuses = type(reuses)!=s:TYPE_NUM ? reuses : reuses ? a:candidates : []
-  call self._solve_conflicts(a:candidates, conflicts)
-  let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
-  return filter(a:candidates, 'v:val =~ "^".self.arglead && index(beens, v:val)==-1')
+function! s:Cmdcmpl.mill_by_arglead(candidates) "{{{
+  return filter(a:candidates, 'v:val =~ "^".self.arglead')
 endfunction
 "}}}
-
-function! s:Cmdcmpl._solve_conflicts(candidates, conflicts) "{{{
-  for confs in a:conflicts
+function! s:Cmdcmpl.mill_inputed(candidates, ...) "{{{
+  let reuses = get(a:, 1, [])
+  let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
+  return filter(a:candidates, 'index(beens, v:val)==-1')
+endfunction
+"}}}
+function! s:Cmdcmpl.mill_conflicted(candidates, ...) "{{{
+  let conflicts = a:0 ? a:1 : get(self.funcopts, 'conflicts', [])
+  for confs in conflicts
     for conf in confs
       if index(self.beens, conf)!=-1
         call filter(a:candidates, 'index(confs, v:val)==-1')
@@ -80,6 +84,18 @@ function! s:Cmdcmpl._solve_conflicts(candidates, conflicts) "{{{
       end
     endfor
   endfor
+  return a:candidates
+endfunction
+"}}}
+function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
+  let conflicts = has_key(a:, 1) ? a:1 : get(self.funcopts, 'conflicts', [])
+  let reuses = get(a:, 2, [])
+  call self.mill_conflicted(a:candidates, conflicts)
+  if type(reuses)!=s:TYPE_LIST
+    return self.mill_by_arglead(a:candidates)
+  end
+  let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
+  return filter(a:candidates, 'v:val =~ "^".self.arglead && index(beens, v:val)==-1')
 endfunction
 "}}}
 

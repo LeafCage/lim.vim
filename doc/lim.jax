@@ -61,7 +61,15 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 		とも出来る。 >
 			[["--foo", "-f"], ["--bar", "-r"], ["--baz", "-z"]]
 <
-	Cmdcmplオブジェクトは以下のメソッドを持つ。
+	Cmdcmplオブジェクトは以下の変数とメソッドを持つ。
+	変数は変更可能だが、そうすると各メソッドの結果が変化するかもしれない。
+	--------~
+	arglead
+	補完対象の文字列。
+
+	beens
+	既に入力されているコマンドライン文字列を引数ごとに区切ってリスト化した
+	もの。
 	--------~
 	get_ordinal([{ignorepat}])
 	現在の引数が先頭から数えて何番目の引数であるかを返す。
@@ -89,23 +97,33 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	その番目のマッチ返す。-1を渡すと|matchlist()|のようにマッチのリストを
 	返す。
 
-	mill_candidates({candidates}, [{funcopts}])
-	{candidates}はリストであり、 ["cand1", "cand2", "cand3"] のように補完
-	候補を並べたものである。文脈に即して補完候補を絞り込んだリストを返す
-	(このとき{candidates}が直接変更される。変更したくない場合は事前に
-	|copy()|しておくこと)。
-	省略可能な引数{funcopts}(辞書)は次のキーを持つことが出来る。
-	--------~
-	conflicts	(リストインリスト)
-		既定値: []
-		|lim#cmdcmpl#newCmdcmpl()|の{funcopts}で使われるものと同じであ
-		る。省略されると|lim#cmdcmpl#newCmdcmpl()|の{funcopts}で渡され
-		たものが使われる。同時に指定することが出来ない引数をリストでグ
-		ループ化して指定する。
-	reuses		(リスト/数値)
-		既定動作では既にコマンドラインに入力済みの引数は再び補完候補に
-		なることはないが、このリスト内の文字列については再利用が許され
-		る。また、非0の数値が渡された場合全ての候補が再利用される。
+	mill_conflicted({candidates}, [{conflicts}])
+	補完候補のリスト{candidates}から、コンフリクトしている要素を取り除く。
+	コンフリクトは引数をグループ化したリストのリスト{conflicts}で表される
+	。"--open" と "--close"、"--foo" と "-f" が排他的関係にあるとき以下の
+	ように表現する。 >
+		[["--open", "--close"], ["--foo", "-f"]]
+<	{conflicts}省略時には|lim#cmdcmpl#newCmdcmpl()|の{funcopts}で渡した
+	conflicts が利用される。それもないときや、{conflicts}が空の時には何も
+	起こらない。
+
+	mill_inputed({candidates}, [{reuses}])
+	補完候補のリスト{candidates}から、すでにコマンドラインに入力されている
+	引数を取り除く。再利用リスト{reuses}にある要素はこの処理から除かれる。
+
+	mill_by_arglead({candidates})
+	補完候補のリスト{candidates}から、arglead にマッチしない要素を取り除く
+	。argleadは現在補完対象になっている文字列である。
+
+	mill_candidates({candidates}, [{conflicts}, [{reuses}]])
+	補完候補のリスト{candidates}に、mill_conflicted()、mill_inputed()、
+	mill_by_arglead()を全て実行した結果を返す。{conflicts}は省略時は
+	|lim#cmdcmpl#newCmdcmpl()|の{funcopts}で渡した conflicts が利用され、
+	それがないときや{conflicts}が空の時にはコンフリクト除外処理は行われな
+	い。{reuses}は省略時は空リストで、これは mill_inputed() でコマンドライ
+	ンに既に入力されている引数を全て取り除くようにするが、{reuses}に1を指
+	定すると mill_inputed() がスキップされ、全ての引数の重複が許されるよう
+	になる。
 
 
 						*lim#cmddef#parse_options()*
