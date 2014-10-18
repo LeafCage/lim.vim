@@ -18,7 +18,8 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.beens = split(a:cmdline, '\%(\\\@<!\s\)\+')[1:]
   let obj.words_til_crs = split(a:cmdline[:(a:cursorpos-1)], '\%(\\\@<!\s\)\+')
   let obj.arglead = obj.is_on_edge ? '' : obj.words_til_crs[-1]
-  let obj.save_ordinals = {}
+  let obj.preword = obj.is_on_edge ? obj.words_til_crs[-1] : obj.words_til_crs[-2]
+  let obj.save_settlednums = {}
   return obj
 endfunction
 "}}}
@@ -26,20 +27,20 @@ function! s:Cmdcmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
-function! s:Cmdcmpl.get_ordinal(...) "{{{
+function! s:Cmdcmpl.get_settlednum(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : get(self.funcopts, 'optpat', '')
   let ignorepat = ignorepat=='' ? NULL : ignorepat
-  if has_key(self.save_ordinals, ignorepat)
-    return self.save_ordinals[ignorepat]
+  if has_key(self.save_settlednums, ignorepat)
+    return self.save_settlednums[ignorepat]
   end
   let transient = copy(self.words_til_crs)
   if ignorepat != NULL
     call filter(transient, 'v:val !~# ignorepat')
   end
   let ret = len(transient)-1
-  let self.save_ordinals[ignorepat] = self.is_on_edge ? ret+1 : ret
-  return self.save_ordinals[ignorepat]
+  let self.save_settlednums[ignorepat] = self.is_on_edge ? ret : ret-1
+  return self.save_settlednums[ignorepat]
 endfunction
 "}}}
 function! s:Cmdcmpl.should_optcmpl() "{{{

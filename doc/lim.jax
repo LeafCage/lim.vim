@@ -65,23 +65,28 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	変数は変更可能だが、そうすると各メソッドの結果が変化するかもしれない。
 	--------~
 	arglead
-	補完対象の文字列。
-
+		補完対象の文字列。
+	preword
+		|arglead|の1つ前の入力文字列。
 	beens
-	既に入力されているコマンドライン文字列を引数ごとに区切ってリスト化した
-	もの。
+		既に入力されているコマンドライン文字列を引数ごとに区切ってリス
+		ト化したもの。
 	--------~
-	get_ordinal([{ignorepat}])
-	現在の引数が先頭から数えて何番目の引数であるかを返す。
-	n番目の引数に専用の候補を用意したいときに役立つ。
+	get_settlednum([{ignorepat}])
+	行頭からカーソル位置までにいくつ完成した引数をそのコマンドが持ってるか
+	を返す。現在入力補完中の引数は数に含めない。1番目の引数を補完中なら、0
+	を返す。
 	{ignorepat}で指定されたパターンにマッチする引数は無視して数えられる。
 	{ignorepat}が指定されていない場合、{funcopts}に optpat が指定されてい
 	る場合はそれが使われる。{ignorepat}が空文字の場合は指定なしとして扱わ
 	れる。 >
 		:Cmd --opt1 arg1 arg2
 <	で{cursorpos}が16のとき(arg1の後の空白にカーソルがあるとき)、
-	{ignorepat}が '^-' だと結果が2になる。{ignorepat}が指定なしならば3。
+	{ignorepat}が '^-' だと結果が1になる。{ignorepat}が指定なしならば2。
 	これは - で始まる引数はオプションとして無視したいときなどに役立つ。
+	ちなみに 内部変数について、self.cmdline_til_crs[self.get_settlednum()]
+	は self.preword に、get(self.beens, self.get_settlednum(), '') は
+	self.argleadに一致する。
 
 	should_optcmpl()
 	{funcopts}にキー optpat が渡されている必要がある。
@@ -91,7 +96,7 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	現在のArgleadがパターン{pat}にマッチすれば1を返す。
 
 	get_arg({pat}, [[{default},] {ordinal}])
-	入力済みのコマンドライン文字列から{pat}に一番初めにマッチした文字列を
+	入力済みのコマンドラインwords から{pat}に一番初めにマッチした文字列を
 	返す。マッチするものがなければ{default}を返す。
 	1～9までの数値{ordinal}を渡すとカッコ|\(\)|でまとめられたパターンから
 	その番目のマッチ返す。-1を渡すと|matchlist()|のようにマッチのリストを
