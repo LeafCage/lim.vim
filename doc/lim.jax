@@ -102,6 +102,12 @@ lim#cmdcmpl#newCmdcmpl({cmdline}, {cursorpos}, [{funcopts}])
 	その番目のマッチ返す。-1を渡すと|matchlist()|のようにマッチのリストを
 	返す。
 
+	get_args({pat}, [{ignorecase}])
+	入力済みのコマンドラインwords から{pat}にマッチしたもの全てをリストに
+	して返す。{ignorecase}が非0なら大文字小文字を区別しない。省略時は大文
+	字小文字を区別する。
+	NOTE:この挙動は変更するかも知れない。
+
 	mill_conflicted({candidates}, [{conflicts}])
 	補完候補のリスト{candidates}から、コンフリクトしている要素を取り除く。
 	コンフリクトは引数をグループ化したリストのリスト{conflicts}で表される

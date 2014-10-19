@@ -66,6 +66,15 @@ function! s:Cmdcmpl.get_arg(pat, ...) "{{{
   return mchs==[] ? default : ordinal==-1 ? mchs : get(mchs, ordinal, '')
 endfunction
 "}}}
+function! s:Cmdcmpl.get_args(pat, ...) "{{{
+  let ignorecase = get(a:, 1, 0)
+  if ignorecase
+    return filter(copy(self.beens), 'v:val =~? a:pat')
+  else
+    return filter(copy(self.beens), 'v:val =~# a:pat')
+  end
+endfunction
+"}}}
 function! s:Cmdcmpl.mill_by_arglead(candidates) "{{{
   return filter(a:candidates, 'v:val =~ "^".self.arglead')
 endfunction
