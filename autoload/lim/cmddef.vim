@@ -148,7 +148,11 @@ function! s:CmdParser.match_args(pat) "{{{
   return s:_match_args(a:pat, copy(self.args))
 endfunction
 "}}}
-function! s:CmdParser.filter(pat) "{{{
+function! s:CmdParser.filter(pat, ...) "{{{
+  if a:0
+    unlockvar l:
+    call extend(l:, a:1)
+  end
   return filter(self.args, a:pat)
 endfunction
 "}}}
