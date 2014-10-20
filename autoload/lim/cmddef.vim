@@ -149,7 +149,7 @@ function! s:CmdParser.match_args(pat) "{{{
 endfunction
 "}}}
 function! s:CmdParser.filter(pat) "{{{
-  return filter(self.args, pat)
+  return filter(self.args, a:pat)
 endfunction
 "}}}
 function! s:CmdParser.parse_options(optdict) "{{{
