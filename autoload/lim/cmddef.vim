@@ -47,7 +47,7 @@ function! s:Cmdcmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
-function! s:Cmdcmpl.get_settledqt(...) "{{{
+function! s:Cmdcmpl.get_settlednum(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : self.funcopts.optbgnpat. '\S'
   let ignorepat = ignorepat=='' ? NULL : ignorepat
