@@ -150,8 +150,9 @@ endfunction
 "}}}
 function! s:CmdParser.filter(pat, ...) "{{{
   if a:0
-    unlockvar l:
-    call extend(l:, a:1)
+    for key in keys(a:1)
+      exe printf('let %s = a:1[key]', key)
+    endfor
   end
   return filter(self.args, a:pat)
 endfunction
