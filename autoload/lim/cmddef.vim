@@ -149,12 +149,13 @@ function! s:CmdParser.match_args(pat) "{{{
 endfunction
 "}}}
 function! s:CmdParser.filter(pat, ...) "{{{
+  let __cmpparser_args__ = self.args
   if a:0
-    for key in keys(a:1)
-      exe printf('let %s = a:1[key]', key)
+    for __cmpparser_key__ in keys(a:1)
+      exe printf('let %s = a:1[__cmpparser_key__]', __cmpparser_key__)
     endfor
   end
-  return filter(self.args, a:pat)
+  return filter(__cmpparser_args__, a:pat)
 endfunction
 "}}}
 function! s:CmdParser.parse_options(optdict) "{{{
