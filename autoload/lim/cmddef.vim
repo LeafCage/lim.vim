@@ -158,6 +158,18 @@ function! s:CmdParser.filter(pat, ...) "{{{
   return filter(__cmpparser_args__, a:pat)
 endfunction
 "}}}
+function! s:CmdParser.divide(pat, ...) "{{{
+  let way = get(a:, 1, 'sep')
+  let self.len = len(self.args)
+  try
+    let ret = self['_divide_'. way](a:pat)
+  catch /E716/
+    echoerr 'CmdParser: 無効な引数です > "'. way. '"'
+    return self.arg
+  endtry
+  return ret
+endfunction
+"}}}
 function! s:CmdParser.parse_options(optdict) "{{{
   let ret = {}
   for [key, val] in items(a:optdict)
@@ -196,6 +208,65 @@ endfunction
 "}}}
 function! s:CmdParser._solve_optval(optval) "{{{
   return a:optval=='' ? 1 : matchstr(a:optval, '^'. self.assignpat. '\zs.*')
+endfunction
+"}}}
+function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
+  let i = a:bgnidx
+  while i < self.len
+    if index(a:patlist, self.args[i])!=-1
+      return i
+    end
+    let i+=1
+  endwhile
+  return -1
+endfunction
+"}}}
+function! s:CmdParser._divide_start(pat) "{{{
+  let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i+1)' : 'match(self.args, a:pat, i+1)'
+  let ret = []
+  let i = 0
+  let j = eval(expr)
+  while j!=-1
+    call add(ret, self.args[i :j-1])
+    let i = j
+    let j = eval(expr)
+  endwhile
+  call add(ret, self.args[i :-1])
+  return ret
+endfunction
+"}}}
+function! s:CmdParser._divide_sep(pat) "{{{
+  let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i)' : 'match(self.args, a:pat, i)'
+  let ret = []
+  let i = 0
+  let j = eval(expr)
+  while j!=-1
+    if j-i != 0
+      call add(ret, self.args[i :j-1])
+    end
+    let i = j+1
+    let j = eval(expr)
+  endwhile
+  if i < self.len
+    call add(ret, self.args[i :-1])
+  end
+  return ret
+endfunction
+"}}}
+function! s:CmdParser._divide_stop(pat) "{{{
+  let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i)' : 'match(self.args, a:pat, i)'
+  let ret = []
+  let i = 0
+  let j = eval(expr)
+  while j!=-1
+    call add(ret, self.args[i :j])
+    let i = j+1
+    let j = eval(expr)
+  endwhile
+  if i < self.len
+    call add(ret, self.args[i :-1])
+  end
+  return ret
 endfunction
 "}}}
 
