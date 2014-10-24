@@ -167,7 +167,7 @@ function! s:CmdParser.divide(pat, ...) "{{{
     echoerr 'CmdParser: 無効な引数です > "'. way. '"'
     return self.arg
   endtry
-  return ret
+  return ret==[[]] ? [] : ret
 endfunction
 "}}}
 function! s:CmdParser.parse_options(optdict) "{{{
