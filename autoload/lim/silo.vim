@@ -9,36 +9,32 @@ let s:TYPE_DICT = type({})
 let s:TYPE_STR = type('')
 
 "Misc:
+function! s:_listify(record) "{{{
+  return split(a:record, s:SEP)
+endfunction
+"}}}
 function! s:_is_invalid_fields(fields) "{{{
   return a:fields==[] || match(a:fields, '^\H\|\W')!=-1
 endfunction
 "}}}
 function! s:_fmtmap_by_list(record, fieldidxs) "{{{
-  let rec = split(a:record, s:SEP)
+  let rec = s:_listify(a:record)
   return map(copy(a:fieldidxs), 'rec[(v:val)]')
 endfunction
 "}}}
 function! s:_fmtmap_by_str(record, fieldsstr, fmt) "{{{
-  exe 'let '. a:fieldsstr. ' = split(a:record, s:SEP)'
+  exe 'let '. a:fieldsstr. ' = s:_listify(a:record)'
   return eval(a:fmt)
 endfunction
 "}}}
 function! s:_inmap_rearrange(record, fieldidxs) "{{{
-  let rec = split(a:record, s:SEP)
-  return join(map(copy(a:fieldidxs), 'rec[(v:val)]'), s:SEP)
+  let rec = s:_listify(a:record)
+  return join(map(a:fieldidxs, 'rec[(v:val)]'), s:SEP)
 endfunction
 "}}}
-
-function! s:_get_extractpat(idx) "{{{
-  return '^\%(.\{-}\t\)\{'. a:idx. '}\zs.\{-}\ze\%(\t\|$\)'
-endfunction
-"}}}
-function! s:_get_sub_extractpat(idx) "{{{
-  return '^\(\%(.\{-}\t\)\{'. a:idx. '}\)\(.\{-}\)\(\t.\+\|$\)'
-endfunction
-"}}}
-function! s:_get_data(record, fieldidx) "{{{
-  return matchstr(a:record, s:_get_extractpat(a:fieldidx))
+function! s:_inmap_chk_fmt(record, fieldidxs) "{{{
+  let rec = s:_listify(a:record)
+  return join(map(a:fieldidxs, 'v:val==-1 ? "" : rec[(v:val)]'), s:SEP)
 endfunction
 "}}}
 
@@ -56,8 +52,46 @@ function! lim#silo#newSilo(name, fields) "{{{
   let obj.fields = a:fields
   let obj.fieldslen = len(a:fields)
   let obj.records = filereadable(obj.path) ? readfile(obj.path) : []
+  try
+    let oldformat = s:_listify(remove(obj.records, 0))
+    if obj._chk_fmt(oldformat)
+      return {}
+    end
+  catch /E684:/
+  endtry
   let obj.save_records = copy(obj.records)
   return obj
+endfunction
+"}}}
+function! s:Silo._chk_fmt(oldformat) "{{{
+  if a:oldformat ==# self.fields
+    return
+  end
+  let missingidxs = []
+  let i = len(a:oldformat)
+  while i
+    let i -= 1
+    if index(self.fields, a:oldformat[i])==-1
+      call add(missingidxs, i)
+    end
+  endwhile
+  let fieldidxs = map(copy(self.fields), 'index(a:oldformat, v:val)')
+  if missingidxs!=[]
+    let i = len(missingidxs)
+    while i
+      let i -= 1
+      let idx = missingidxs[i]
+      if fieldidxs[idx] ==# -1
+        let fieldidxs[idx] = idx
+        unlet missingidxs[i]
+      end
+    endwhile
+    if missingidxs!=[]
+      echoerr 'silo: invalid field >' join(missings, ', ')
+      return 1
+    end
+  end
+  call map(self.records, 's:_inmap_chk_fmt(v:val, fieldidxs)')
 endfunction
 "}}}
 function! s:Silo._get_refinepat_by_list(listwhere) "{{{
@@ -88,22 +122,22 @@ function! s:Silo._get_refinepat_by_dict(dictwhere) "{{{
   return pat
 endfunction
 "}}}
-function! s:Silo._get_fieldidxs(fieldparts) "{{{
-  let fieldidxs = map(copy(a:fieldparts), 'index(self.fields, v:val)')
+function! s:Silo._get_fieldidxs(fmt) "{{{
+  let fieldidxs = map(copy(a:fmt), 'index(self.fields, v:val)')
   if index(fieldidxs, -1)!=-1
-    throw 'silo: invalid format > '. string(a:fieldparts)
+    throw 'silo: invalid format > '. string(a:fmt)
   end
   return fieldidxs
 endfunction
 "}}}
 function! s:Silo._fmt_by_list(records, fmt) "{{{
   if a:fmt==[]
-    return map(a:records, 'split(v:val, s:SEP)')
+    return map(a:records, 's:_listify(v:val)')
   end
   let fieldidxs = self._get_fieldidxs(a:fmt)
   if len(a:fmt)==1
     let idx = fieldidxs[0]
-    return map(a:records, 'split(v:val, s:SEP)[idx]')
+    return map(a:records, 's:_listify(v:val)[idx]')
   end
   return map(a:records, 's:_fmtmap_by_list(v:val, fieldidxs)')
 endfunction
@@ -199,7 +233,7 @@ function! s:Silo.commit() "{{{
   if !isdirectory(self.dir)
     call mkdir(self.dir, 'p')
   end
-  call writefile(self.records, self.path)
+  call writefile([join(self.fields, s:SEP)] + self.records, self.path)
 endfunction
 "}}}
 function! s:Silo.insert(rec) "{{{
