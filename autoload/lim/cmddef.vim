@@ -4,16 +4,31 @@ scriptencoding utf-8
 "=============================================================================
 let s:TYPE_LIST = type([])
 let s:TYPE_DICT = type({})
+let s:TYPE_STR = type('')
 
 "Misc:
-function! s:_match_arg(pat, variadic, list) "{{{
-  if type(a:pat)==s:TYPE_LIST
+let s:func = {}
+function! s:func._get_optignorepat() "{{{
+  return '^\%('.self.shortoptbgn.'\|'.self.longoptbgn.'\)\S'
+endfunction
+"}}}
+function! s:func._get_arg(pat, variadic, list) dict "{{{
+  let type = type(a:pat)
+  if type==s:TYPE_STR
+    let default = get(a:variadic, 0, '')
+    let idx = match(a:list, a:pat)
+    return idx==-1 ? default : a:list[i]
+  elseif type==s:TYPE_LIST
     let [idx, default] = [get(a:variadic, 0, 0), get(a:variadic, 1, '')]
     return get(filter(copy(a:list), 'index(a:pat, v:val)!=-1'), idx, default)
   end
-  let default = get(a:variadic, 0, '')
-  let idx = match(a:list, a:pat)
-  return idx==-1 ? default : a:list[i]
+  let default = get(a:variadic, -1, '')
+  let list = copy(a:list)
+  if len(a:variadic)>1
+    let ignorepat = self._get_optignorepat()
+    call filter(list, 'v:val !~# ignorepat')
+  end
+  return get(list, pat, default)
 endfunction
 "}}}
 function! s:_match_args(pat, list) "{{{
@@ -24,14 +39,74 @@ function! s:_match_args(pat, list) "{{{
 endfunction
 "}}}
 
+let s:Classifier = {}
+function! s:newClassifier(candidates, longoptbgn, shortoptbgn) "{{{
+  let obj = copy(s:Classifier)
+  let obj.candidates = a:candidates
+  let obj.longoptbgn = '^'.a:longoptbgn
+  let obj.shortoptbgn = '^'.a:shortoptbgn
+  let obj.short = []
+  let obj.long = []
+  let obj.other = []
+  return obj
+endfunction
+"}}}
+function! s:Classifier.set_classified_candies(...) "{{{
+  let self.beens = get(a:, 1, [])
+  for candy in self.candidates
+    call self._classify_candy(candy)
+    unlet candy
+  endfor
+endfunction
+"}}}
+function! s:Classifier.join_candidates(order, sort) "{{{
+  for elm in ['long', 'short', 'other']
+    if get(a:sort, elm, -1) != -1
+      exe 'call sort(self[elm], '. get(a:sort, elm, ''). ')'
+    end
+  endfor
+  return self[a:order[0]] + self[a:order[1]] + self[a:order[2]]
+endfunction
+"}}}
+function! s:Classifier._classify_candy(candy) "{{{
+  if type(a:candy)!=s:TYPE_LIST
+    if index(self.beens, a:candy)==-1
+      call self._add(a:candy)
+    end
+    return
+  end
+  for cand in a:candy
+    if index(self.beens, cand)!=-1
+      return
+    end
+  endfor
+  for cand in a:candy
+    call self._add(cand)
+  endfor
+endfunction
+"}}}
+function! s:Classifier._add(candy) "{{{
+   if a:candy =~ self.longoptbgn
+     return add(self.long, a:candy)
+   elseif a:candy =~ self.shortoptbgn
+     return add(self.short, a:candy)
+   else
+     return add(self.other, a:candy)
+   end
+endfunction
+"}}}
+
 
 "=============================================================================
 "Main:
 let s:Cmdcmpl = {}
 function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj = copy(s:Cmdcmpl)
-  let obj.funcopts = get(a:, 1, {})
-  let obj.funcopts.optbgnpat = get(obj.funcopts, 'optbgnpat', '^--\?')
+  let funcopts = get(a:, 1, {})
+  let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
+  let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
+  let obj.order = get(funcopts, 'order', ['long', 'short', 'other'])
+  let obj.sort = get(funcopts, 'sort', {'long': -1, 'short': -1, 'other': -1})
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj.is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
@@ -43,13 +118,15 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   return obj
 endfunction
 "}}}
+let s:Cmdcmpl._get_optignorepat = s:func._get_optignorepat
+let s:Cmdcmpl._get_arg = s:func._get_arg
 function! s:Cmdcmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
 function! s:Cmdcmpl.get_settlednum(...) "{{{
   let NULL = "\<C-n>"
-  let ignorepat = a:0 ? a:1 : self.funcopts.optbgnpat. '\S'
+  let ignorepat = a:0 ? a:1 : self._get_optignorepat()
   let ignorepat = ignorepat=='' ? NULL : ignorepat
   if has_key(self.save_settlednums, ignorepat)
     return self.save_settlednums[ignorepat]
@@ -64,24 +141,24 @@ function! s:Cmdcmpl.get_settlednum(...) "{{{
 endfunction
 "}}}
 function! s:Cmdcmpl.should_optcmpl() "{{{
-  let pat = self.funcopts.optbgnpat
-  return pat!='' && self.arglead =~# pat
+  let pat = '^'.self.shortoptbgn.'\|^'.self.longoptbgn
+  return pat!='^\|^' && self.arglead =~# pat
 endfunction
 "}}}
 function! s:Cmdcmpl.is_matched(pat) "{{{
   return self.arglead =~# a:pat
 endfunction
 "}}}
-function! s:Cmdcmpl.match_arg(pat, ...) "{{{
-  return s:_match_arg(a:pat, a:000, self.beens)
+function! s:Cmdcmpl.get_arg(pat, ...) "{{{
+  return self._get_arg(a:pat, a:000, self.beens)
 endfunction
 "}}}
 function! s:Cmdcmpl.match_args(pat) "{{{
   return s:_match_args(a:pat, copy(self.beens))
 endfunction
 "}}}
-function! s:Cmdcmpl.match_leftarg(pat, ...) "{{{
-  return s:_match_arg(a:pat, a:000, self.leftwords)
+function! s:Cmdcmpl.get_leftarg(pat, ...) "{{{
+  return self._get_arg(a:pat, a:000, self.leftwords)
 endfunction
 "}}}
 function! s:Cmdcmpl.match_leftargs(pat) "{{{
@@ -92,34 +169,24 @@ function! s:Cmdcmpl.mill_by_arglead(candidates) "{{{
   return filter(a:candidates, 'v:val =~ "^".self.arglead')
 endfunction
 "}}}
-function! s:Cmdcmpl.mill_inputed(candidates, ...) "{{{
-  let reuses = get(a:, 1, [])
-  let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
-  return filter(a:candidates, 'index(beens, v:val)==-1')
-endfunction
-"}}}
-function! s:Cmdcmpl.mill_conflicted(candidates, ...) "{{{
-  let conflicts = a:0 ? a:1 : get(self.funcopts, 'conflicts', [])
-  for confs in conflicts
-    for conf in confs
-      if index(self.beens, conf)!=-1
-        call filter(a:candidates, 'index(confs, v:val)==-1')
-        break
-      end
-    endfor
-  endfor
-  return a:candidates
-endfunction
-"}}}
 function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
-  let conflicts = has_key(a:, 1) ? a:1 : get(self.funcopts, 'conflicts', [])
-  let reuses = get(a:, 2, [])
-  call self.mill_conflicted(a:candidates, conflicts)
-  if type(reuses)!=s:TYPE_LIST
-    return self.mill_by_arglead(a:candidates)
+  let funcopts = get(a:, 1, {})
+  let reuses = get(funcopts, 'reuses', [])
+  let order = get(funcopts, 'order', self.order)
+  let sort = get(funcopts, 'sort', self.sort)
+  let classifier = s:newClassifier(a:candidates, self.longoptbgn, self.shortoptbgn)
+  if type(reuses)==s:TYPE_LIST
+    let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
+    call classifier.set_classified_candies(beens)
+  else
+    "TODO
+    call classifier.set_classified_candies()
   end
-  let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
-  return filter(a:candidates, 'v:val =~ "^".self.arglead && index(beens, v:val)==-1')
+  let candidates = classifier.join_candidates(order, sort)
+  if get(funcopts, 'exec_mill_arglead', 1)
+    return self.mill_by_arglead(candidates)
+  end
+  return candidates
 endfunction
 "}}}
 
@@ -129,19 +196,21 @@ let s:CmdParser = {}
 function! lim#cmddef#newCmdParser(args, ...) "{{{
   let obj = copy(s:CmdParser)
   let funcopts = get(a:, 1, {})
-  let obj.longbgnpat = get(funcopts, 'longbgnpat', '--')
-  let obj.shortbgnpat = get(funcopts, 'shortbgnpat', '-')
+  let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
+  let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
   let obj.assignpat = get(funcopts, 'assignpat', '=')
   let obj.endpat = '\%('. obj.assignpat. '\(.*\)\)\?$'
   let obj.args = a:args
   let obj.args_original = copy(a:args)
-  let pat = '^'. obj.longbgnpat
+  let pat = '^'. obj.longoptbgn
   let obj.args_exceptlong = filter(copy(a:args), 'v:val !~# pat')
   return obj
 endfunction
 "}}}
-function! s:CmdParser.match_arg(pat, ...) "{{{
-  return s:_match_arg(a:pat, a:000, self.args)
+let s:CmdParser._get_optignorepat = s:func._get_optignorepat
+let s:CmdParser._get_arg = s:func._get_arg
+function! s:CmdParser.get_arg(pat, ...) "{{{
+  return s:_get_arg(a:pat, a:000, self.args)
 endfunction
 "}}}
 function! s:CmdParser.match_args(pat) "{{{
@@ -175,7 +244,7 @@ function! s:CmdParser.parse_options(optdict) "{{{
   for [key, val] in items(a:optdict)
     let valdict = type(val)!=s:TYPE_DICT ? {'default': val} : val
     unlet val
-    let optpats = has_key(valdict, 'pats') ? valdict.pats : [self.longbgnpat. key]
+    let optpats = has_key(valdict, 'pats') ? valdict.pats : [self.longoptbgn. key]
     let optval = self._get_optval(optpats)
     let ret[key] = optval=='' ? get(valdict, 'default', 0) : optval
   endfor
@@ -185,18 +254,18 @@ endfunction
 
 function! s:CmdParser._get_optval(optpats) "{{{
   for pat in a:optpats
-    if pat =~# '^'.self.longbgnpat || pat !~# '^'.self.shortbgnpat.'.$'
+    if pat =~# '^'.self.longoptbgn || pat !~# '^'.self.shortoptbgn.'.$'
       let i = match(self.args, '^'.pat. self.endpat)
       if i!=-1
         return self._solve_optval(substitute(remove(self.args, i), '^'.pat, '', ''))
       end
     else
-      let shortchr = matchstr(pat, '^'.self.shortbgnpat.'\zs.$')
-      let i = match(self.args_exceptlong, '^'.self.shortbgnpat.'.\{-}'.shortchr.'.\{-}'.endpat)
+      let shortchr = matchstr(pat, '^'.self.shortoptbgn.'\zs.$')
+      let i = match(self.args_exceptlong, '^'.self.shortoptbgn.'.\{-}'.shortchr.'.\{-}'.endpat)
       if i!=-1
         let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
-        let self.args[i] = substitute(self.args[i], '^'. self.shortbgnpat.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
-        if self.args[i] ==# shortbgnpat
+        let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
+        if self.args[i] ==# shortoptbgn
           unlet self.args[i]
         end
         return self._solve_optval(optval)
