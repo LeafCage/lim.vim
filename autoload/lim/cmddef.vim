@@ -62,7 +62,7 @@ endfunction
 function! s:Classifier.join_candidates(order, sort) "{{{
   for elm in ['long', 'short', 'other']
     if get(a:sort, elm, -1) != -1
-      exe 'call sort(self[elm], '. get(a:sort, elm, ''). ')'
+      exe 'call sort(self[elm], '. (a:sort[elm] ? a:sort[elm] : ''). ')'
     end
   endfor
   return self[a:order[0]] + self[a:order[1]] + self[a:order[2]]
@@ -106,7 +106,7 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
   let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
   let obj.order = get(funcopts, 'order', ['long', 'short', 'other'])
-  let obj.sort = get(funcopts, 'sort', {'long': -1, 'short': -1, 'other': -1})
+  let obj.sort = get(funcopts, 'sort', {'long': 0, 'short': 0, 'other': 0})
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj.is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
@@ -165,12 +165,15 @@ function! s:Cmdcmpl.match_leftargs(pat) "{{{
   return s:_match_args(a:pat, copy(self.leftwords))
 endfunction
 "}}}
-function! s:Cmdcmpl.mill_by_arglead(candidates) "{{{
-  return filter(a:candidates, 'v:val =~ "^".self.arglead')
-endfunction
-"}}}
 function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
-  let funcopts = get(a:, 1, {})
+  let matchtype = 'forward'
+  let funcopts = {}
+  if a:0
+    exe 'let' (type(a:1)==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:1'
+    if a:0>1
+      exe 'let' (type(a:2)==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:2'
+    end
+  end
   let reuses = get(funcopts, 'reuses', [])
   let order = get(funcopts, 'order', self.order)
   let sort = get(funcopts, 'sort', self.sort)
@@ -183,10 +186,32 @@ function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
     call classifier.set_classified_candies()
   end
   let candidates = classifier.join_candidates(order, sort)
-  if get(funcopts, 'exec_mill_arglead', 1)
-    return self.mill_by_arglead(candidates)
-  end
+  try
+    let candidates = self['_millby_arglead_'.matchtype](candidates)
+  catch /E716:/
+    echoerr 'lim/cmddef: invalid argument > "'. matchtype. '"'
+  endtry
   return candidates
+endfunction
+"}}}
+function! s:Cmdcmpl._millby_arglead_none(candidates) "{{{
+  return a:candidates
+endfunction
+"}}}
+function! s:Cmdcmpl._millby_arglead_forward(candidates) "{{{
+  return filter(a:candidates, 'v:val =~ "^".self.arglead')
+endfunction
+"}}}
+function! s:Cmdcmpl._millby_arglead_backword(candidates) "{{{
+  return filter(a:candidates, 'v:val =~ self.arglead."$"')
+endfunction
+"}}}
+function! s:Cmdcmpl._millby_arglead_partial(candidates) "{{{
+  return filter(a:candidates, 'v:val =~ self.arglead')
+endfunction
+"}}}
+function! s:Cmdcmpl._millby_arglead_exact(candidates) "{{{
+  return filter(a:candidates, 'v:val == self.arglead')
 endfunction
 "}}}
 
