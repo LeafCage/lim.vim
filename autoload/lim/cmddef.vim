@@ -114,7 +114,7 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.leftwords = split(a:cmdline[:(a:cursorpos-1)], '\%(\\\@<!\s\)\+')
   let obj.arglead = obj.is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj.is_on_edge ? obj.leftwords[-1] : obj.leftwords[-2]
-  let obj.save_settlednums = {}
+  let obj.save_leftargscnt = {}
   return obj
 endfunction
 "}}}
@@ -124,20 +124,20 @@ function! s:Cmdcmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
-function! s:Cmdcmpl.get_settlednum(...) "{{{
+function! s:Cmdcmpl.count_leftargs(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : self._get_optignorepat()
   let ignorepat = ignorepat=='' ? NULL : ignorepat
-  if has_key(self.save_settlednums, ignorepat)
-    return self.save_settlednums[ignorepat]
+  if has_key(self.save_leftargscnt, ignorepat)
+    return self.save_leftargscnt[ignorepat]
   end
   let transient = copy(self.leftwords)
   if ignorepat != NULL
     call filter(transient, 'v:val !~# ignorepat')
   end
   let ret = len(transient)-1
-  let self.save_settlednums[ignorepat] = self.is_on_edge ? ret : ret-1
-  return self.save_settlednums[ignorepat]
+  let self.save_leftargscnt[ignorepat] = self.is_on_edge ? ret : ret-1
+  return self.save_leftargscnt[ignorepat]
 endfunction
 "}}}
 function! s:Cmdcmpl.should_optcmpl() "{{{
@@ -168,12 +168,11 @@ endfunction
 function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
   let matchtype = 'forward'
   let funcopts = {}
-  if a:0
-    exe 'let' (type(a:1)==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:1'
-    if a:0>1
-      exe 'let' (type(a:2)==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:2'
-    end
-  end
+  let l = a:0
+  while l
+    let l -= 1
+    exe 'let' (type(a:000[l])==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:000[l]'
+  endwhile
   let reuses = get(funcopts, 'reuses', [])
   let order = get(funcopts, 'order', self.order)
   let sort = get(funcopts, 'sort', self.sort)
@@ -266,12 +265,17 @@ endfunction
 "}}}
 function! s:CmdParser.parse_options(optdict) "{{{
   let ret = {}
-  for [key, val] in items(a:optdict)
-    let valdict = type(val)!=s:TYPE_DICT ? {'default': val} : val
-    unlet val
-    let optpats = has_key(valdict, 'pats') ? valdict.pats : [self.longoptbgn. key]
-    let optval = self._get_optval(optpats)
-    let ret[key] = optval=='' ? get(valdict, 'default', 0) : optval
+  for [key, vallist] in items(a:optdict)
+    let default = 0
+    let pats = [self.longoptbgn. key]
+    let l = len(vallist)
+    while l
+      let l -= 1
+      exe 'let' (type(vallist[l])==s:TYPE_LIST ? 'pats' : 'default') '= vallist[l]'
+    endwhile
+    let optval = self._get_optval(pats)
+    let ret[key] = optval=='' ? default : optval
+    unlet default
   endfor
   return ret
 endfunction
