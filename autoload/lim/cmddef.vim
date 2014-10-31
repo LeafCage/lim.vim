@@ -106,7 +106,7 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
   let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
   let obj.order = get(funcopts, 'order', ['long', 'short', 'other'])
-  let obj.sort = get(funcopts, 'sort', {'long': 0, 'short': 0, 'other': 0})
+  let obj.sort = get(funcopts, 'sort', {'long': &ic, 'short': &ic, 'other': -1})
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj.is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
@@ -290,7 +290,7 @@ function! s:CmdParser._get_optval(optpats) "{{{
       end
     else
       let shortchr = matchstr(pat, '^'.self.shortoptbgn.'\zs.$')
-      let i = match(self.args_exceptlong, '^'.self.shortoptbgn.'.\{-}'.shortchr.'.\{-}'.endpat)
+      let i = match(self.args_exceptlong, '^'.self.shortoptbgn.'.\{-}'.shortchr.'.\{-}'.self.endpat)
       if i!=-1
         let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
         let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
