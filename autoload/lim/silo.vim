@@ -7,6 +7,8 @@ let s:SEP = "\<C-k>\<Tab>"
 let s:TYPE_LIST = type([])
 let s:TYPE_DICT = type({})
 let s:TYPE_STR = type('')
+let s:CNV = {'m': {'.*': '.\{-}', '.\+': '.\{-1,}'}, 'v': {'.*': '.\{-}', '.+': '.\{-1,}'}}
+let s:CNV.M = {'\.\*': '\.\{-}', '\.\+': '\.\{-1,}'}
 
 "Misc:
 function! s:_listify(record) "{{{
@@ -35,6 +37,29 @@ endfunction
 function! s:_inmap_chk_fmt(record, fieldidxs) "{{{
   let rec = s:_listify(a:record)
   return join(map(a:fieldidxs, 'v:val==-1 ? "" : rec[(v:val)]'), s:SEP)
+endfunction
+"}}}
+function! s:_cnv_magicpat(str, m) "{{{
+  let m = a:m
+  let ret = m==0 ? [] : [s:_cnv_wildcard(a:str[:m-1], 'm')]
+  let n = match(a:str, '\\[vmMV]', m+1)
+  while n!=-1
+    call add(ret, s:_cnv_wildcard(a:str[m : n-1]))
+    let m = n
+    let n = match(a:str, '\\[vmMV]', m+1)
+  endwhile
+  call add(ret, s:_cnv_wildcard(a:str[m :]))
+  return join(ret, '')
+endfunction
+"}}}
+function! s:_cnv_wildcard(str, ...) "{{{
+  let c = a:0 ? a:1 : a:str[1]
+  if c==#'m'
+    return substitute(a:str, '\\\@<!\.\%(\*\|\\+\)', '\=s:CNV.m[submatch(0)]', 'g')
+  elseif c==#'v'
+    return substitute(a:str, '\\\@<!\.[*+]', '\=s:CNV.v[submatch(0)]', 'g')
+  end
+  return substitute(a:str, '\\.\%(\\\*\|\\+\)', '\=s:CNV.M[submatch(0)]', 'g')
 endfunction
 "}}}
 
@@ -114,11 +139,21 @@ function! s:Silo._get_refinepat_by_dict(dictwhere) "{{{
   endfor
   let i = 0
   let pat = '^'
-  while i < self.fieldslen-1
-    let pat .= '\%('. get(order, i, '\m.\{-}'). '\)'. s:SEP
-    let i += 1
-  endwhile
-  let pat .= '\%('. get(order, i, '\m.\{-}'). '\)'. '$'
+  let save_ignorecase = &ic
+  set noic
+  try
+    while i < self.fieldslen-1
+      if has_key(order, i)
+        let m = match(order[i], '\\[vmMV]')
+        let order[i] = m!=-1 ? s:_cnv_magicpat(order[i], m) : s:_cnv_wildcard(order[i], 'm')
+      end
+      let pat .= '\%('. get(order, i, '\m.\{-}'). '\)'. s:SEP
+      let i += 1
+    endwhile
+    let pat .= '\%('. get(order, i, '\m.\{-}'). '\)'. '$'
+  finally
+    let &ic = save_ignorecase
+  endtry
   return pat
 endfunction
 "}}}
