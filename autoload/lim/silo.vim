@@ -187,12 +187,11 @@ function! s:Silo._fmt_by_list(records, fmt) "{{{
 endfunction
 "}}}
 function! s:Silo._fmt_by_str(records, fmt) "{{{
-  if a:fmt==''
-    return a:records
+  let idx = index(self.fields, a:fmt)
+  if idx==-1
+    throw 'lim-silo: invalid format > '. a:fmt
   end
-  let fieldsstr = substitute(string(self.fields), "'", '', 'g')
-  echom fieldsstr
-  return map(a:records, 's:_fmtmap_by_str(v:val, fieldsstr, a:fmt)')
+  return map(a:records, 's:_listify(v:val)[idx]')
 endfunction
 "}}}
 function! s:Silo.is_changed() "{{{
@@ -255,15 +254,18 @@ function! s:Silo.get(where, ...) "{{{
   else
     let idx = match(self.records, a:where)
   end
-  if fmt==[]
-    return idx==-1 ? [] : s:_listify(self.records[idx])
+  if type(fmt)==s:TYPE_LIST
+    if fmt==[]
+      return idx==-1 ? [] : s:_listify(self.records[idx])
+    end
+    let fieldidxs = self._get_fieldidxs(fmt)
+    return idx==-1 ? [] : s:_fmtmap_by_list(self.records[idx], fieldidxs)
   end
-  let fieldidxs = self._get_fieldidxs(fmt)
-  if len(fmt)==1
-    let fieldidx = fieldidxs[0]
-    return idx==-1 ? '' : s:_listify(self.records[idx])[fieldidx]
+  let fieldidx = index(self.fields, fmt)
+  if fieldidx==-1
+    throw 'lim-silo: invalid format > '. fmt
   end
-  return idx==-1 ? [] : s:_fmtmap_by_list(self.records[idx], fieldidxs)
+  return idx==-1 ? '' : s:_listify(self.records[idx])[fieldidx]
 endfunction
 "}}}
 function! s:Silo.exclude(where, ...) "{{{
