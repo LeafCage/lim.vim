@@ -243,6 +243,29 @@ function! s:Silo.select_distinct(where, ...) "{{{
   endtry
 endfunction
 "}}}
+function! s:Silo.get(where, ...) "{{{
+  let fmt = get(a:, 1, [])
+  let type = type(a:where)
+  if empty(a:where)
+    let idx = self.records==[] ? -1 : 0
+  elseif type==s:TYPE_LIST
+    let idx = index(self.records, self._get_refinepat_by_list(a:where))
+  elseif type==s:TYPE_DICT
+    let idx = match(self.records, self._get_refinepat_by_dict(a:where))
+  else
+    let idx = match(self.records, a:where)
+  end
+  if fmt==[]
+    return idx==-1 ? [] : s:_listify(self.records[idx])
+  end
+  let fieldidxs = self._get_fieldidxs(fmt)
+  if len(fmt)==1
+    let fieldidx = fieldidxs[0]
+    return idx==-1 ? '' : s:_listify(self.records[idx])[fieldidx]
+  end
+  return idx==-1 ? [] : s:_fmtmap_by_list(self.records[idx], fieldidxs)
+endfunction
+"}}}
 function! s:Silo.exclude(where, ...) "{{{
   let fmt = get(a:, 1, [])
   let type = type(a:where)
@@ -272,7 +295,7 @@ endfunction
 "}}}
 function! s:Silo.commit() "{{{
   if !self.is_changed()
-    return
+    return 1
   end
   if !isdirectory(self.dir)
     call mkdir(self.dir, 'p')
