@@ -15,6 +15,10 @@ function! s:_listify(record) "{{{
   return split(a:record, s:SEP)
 endfunction
 "}}}
+function! s:_innerstrify(list) "{{{
+  return join(a:list, s:SEP)
+endfunction
+"}}}
 function! s:_is_invalid_fields(fields) "{{{
   return a:fields==[] || match(a:fields, '^\H\|\W')!=-1
 endfunction
@@ -31,12 +35,12 @@ endfunction
 "}}}
 function! s:_inmap_rearrange(record, fieldidxs) "{{{
   let rec = s:_listify(a:record)
-  return join(map(a:fieldidxs, 'rec[(v:val)]'), s:SEP)
+  return s:_innerstrify(map(a:fieldidxs, 'rec[(v:val)]'))
 endfunction
 "}}}
 function! s:_inmap_chk_fmt(record, fieldidxs) "{{{
   let rec = s:_listify(a:record)
-  return join(map(a:fieldidxs, 'v:val==-1 ? "" : rec[(v:val)]'), s:SEP)
+  return s:_innerstrify(map(a:fieldidxs, 'v:val==-1 ? "" : rec[(v:val)]'))
 endfunction
 "}}}
 function! s:_cnv_magicpat(str, m) "{{{
@@ -62,6 +66,11 @@ function! s:_cnv_wildcard(str, ...) "{{{
   return substitute(a:str, '\\.\%(\\\*\|\\+\)', '\=s:CNV.M[submatch(0)]', 'g')
 endfunction
 "}}}
+function! s:_sub_4updatedict(sub) "{{{
+  let s:_sub_i += 1
+  return get(s:_sub_idx2dest, s:_sub_i, a:sub)
+endfunction
+"}}}
 
 
 "=============================================================================
@@ -79,7 +88,7 @@ function! lim#silo#newSilo(name, fields) "{{{
   let obj.records = filereadable(obj.path) ? readfile(obj.path) : []
   try
     let oldformat = s:_listify(remove(obj.records, 0))
-    if obj._chk_fmt(oldformat)
+    if obj._chk_version(oldformat)
       return {}
     end
   catch /E684:/
@@ -88,7 +97,7 @@ function! lim#silo#newSilo(name, fields) "{{{
   return obj
 endfunction
 "}}}
-function! s:Silo._chk_fmt(oldformat) "{{{
+function! s:Silo._chk_version(oldformat) "{{{
   if a:oldformat ==# self.fields
     return
   end
@@ -123,7 +132,7 @@ function! s:Silo._get_refinepat_by_list(listwhere) "{{{
   if len(a:listwhere)!=self.fieldslen
     throw 'select: invalid condition > '. string(a:listwhere)
   end
-  return join(a:listwhere, s:SEP)
+  return s:_innerstrify(a:listwhere)
 endfunction
 "}}}
 function! s:Silo._get_refinepat_by_dict(dictwhere) "{{{
@@ -160,7 +169,7 @@ endfunction
 function! s:Silo._get_fieldidxs(fmt) "{{{
   let fieldidxs = map(copy(a:fmt), 'index(self.fields, v:val)')
   if index(fieldidxs, -1)!=-1
-    throw 'silo: invalid format > '. string(a:fmt)
+    throw 'lim-silo: invalid format > '. string(a:fmt)
   end
   return fieldidxs
 endfunction
@@ -268,7 +277,7 @@ function! s:Silo.commit() "{{{
   if !isdirectory(self.dir)
     call mkdir(self.dir, 'p')
   end
-  call writefile([join(self.fields, s:SEP)] + self.records, self.path)
+  call writefile([s:_innerstrify(self.fields)] + self.records, self.path)
 endfunction
 "}}}
 function! s:Silo.insert(rec) "{{{
@@ -278,17 +287,38 @@ function! s:Silo.insert(rec) "{{{
   for rec in a:rec
     call self._insert(rec)
   endfor
-  return self
+endfunction
+"}}}
+function! s:Silo.update(where, rec) "{{{
+  let targidxs = empty(a:where) ? range(self.fieldslen) : self._get_update_targidxs(a:where)
+  let targlen = len(targidxs)
+  if !targlen
+    return -1
+  end
+  let rectype = type(a:rec)
+  if rectype==s:TYPE_LIST
+    return self._update_byreclist(a:rec, targlen, targidxs[0])
+  elseif rectype==s:TYPE_DICT
+    try
+      call self._update_byrecdict(a:rec, targidxs)
+    catch /invalid/
+      echoerr v:exception
+      return 2
+    catch /duplicated/
+      echoerr v:exception
+      return 1
+    endtry
+  end
 endfunction
 "}}}
 function! s:Silo.delete(where) "{{{
-  let type = type(a:where)
+  let wheretype = type(a:where)
   if empty(a:where)
     let self.records = []
-  elseif type==s:TYPE_LIST
+  elseif wheretype==s:TYPE_LIST
     let pat = self._get_refinepat_by_list(a:where)
     call filter(self.records, 'v:val !=# pat')
-  elseif type==s:TYPE_DICT
+  elseif wheretype==s:TYPE_DICT
     let pat = self._get_refinepat_by_dict(a:where)
     call filter(self.records, 'v:val !~# pat')
   else
@@ -321,14 +351,72 @@ endfunction
 "}}}
 function! s:Silo._insert(rec) "{{{
   if self.has(a:rec)
-    return self
+    return 1
   end
   if len(a:rec)!=self.fieldslen
-    echoerr 'silo : invalid insert >' a:rec
-    return self
+    echoerr 'lim-silo : invalid insert >' a:rec
+    return 2
   end
-  call add(self.records, join(a:rec, s:SEP))
-  return self
+  call add(self.records, s:_innerstrify(a:rec))
+endfunction
+"}}}
+function! s:Silo._get_update_targidxs(where) "{{{
+  let wheretype = type(a:where)
+  let pat = wheretype==s:TYPE_LIST ? self._get_refinepat_by_list(a:where) : wheretype==s:TYPE_DICT ? self._get_refinepat_by_dict(a:where) : a:where
+  let targidxs = []
+  let idx = match(self.records, pat)
+  while idx!=-1
+    call add(targidxs, idx)
+    let idx = match(self.records, pat, idx+1)
+  endwhile
+  return targidxs
+endfunction
+"}}}
+function! s:Silo._update_byreclist(reclist, targlen, targidx) "{{{
+  if a:targlen>1
+    echoerr 'lim-silo: 条件が一意ではありません。'
+    return 2
+  elseif len(a:reclist)!=self.fieldslen
+    echoerr 'lim-silo : fields'' len is invalid >' a:reclist
+    return 2
+  elseif self.has(a:reclist)
+    echoerr 'lim-silo: 既に存在するレコードです。'
+    return 1
+  end
+  let self.records[a:targidx] = s:_innerstrify(a:reclist)
+endfunction
+"}}}
+function! s:Silo._update_byrecdict(recdict, targidxs) "{{{
+  let PAT = '.\{-}\%('.s:SEP.'\|$\)'
+  let s:_sub_idx2dest = self._fieldkeydict_to_idxkeydict(a:recdict)
+  let records = copy(self.records)
+  for idx in a:targidxs
+    let s:_sub_i = -1
+    let records[idx] = substitute(records[idx], PAT, '\=s:_sub_4updatedict(submatch(0))', 'g')
+  endfor
+  unlet s:_sub_i s:_sub_idx2dest
+  let seens = {}
+  for record in records
+    let str = ':'. record
+    if has_key(seens, str)
+      throw 'lim-silo: record is duplicated > '. record
+    end
+    let seens[str] = 1
+  endfor
+  let self.records = records
+endfunction
+"}}}
+function! s:Silo._fieldkeydict_to_idxkeydict(destdict) "{{{
+  let ret = {}
+  let lastidx = self.fieldslen-1
+  for [field, dest] in items(a:destdict)
+    let idx = index(self.fields, field)
+    let ret[idx] = dest. (idx==lastidx ? '' : s:SEP)
+  endfor
+  if has_key(ret, '-1')
+    throw 'lim-silo: invalid field > '. ret['-1']
+  end
+  return ret
 endfunction
 "}}}
 
