@@ -294,7 +294,7 @@ function! s:CmdParser._get_optval(optpats) "{{{
       if i!=-1
         let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
         let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
-        if self.args[i] ==# shortoptbgn
+        if self.args[i] ==# self.shortoptbgn
           unlet self.args[i]
         end
         return self._solve_optval(optval)
