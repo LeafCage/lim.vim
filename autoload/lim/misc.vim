@@ -2,6 +2,8 @@ if exists('s:save_cpo')| finish| endif
 let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
+let s:TYPE_NR = type(0)
+
 "Misc:
 function! s:_get_rootpath_and_pluginname_of(path) "{{{
   for dir in ['after', 'autoload', 'plugin', 'syntax', 'ftplugin', 'ftdetect']
@@ -56,7 +58,6 @@ endfunction
 
 "=============================================================================
 "Vim:
-"exコマンドの結果をリスト化して返す
 function! lim#misc#get_cmdresults(cmd) "{{{
   let save_vfile = &verbosefile
   set verbosefile=
@@ -68,18 +69,11 @@ function! lim#misc#get_cmdresults(cmd) "{{{
 endfunction
 "}}}
 
-let s:sid_cache = {}
 function! lim#misc#get_sid(...) "{{{
   let path = !a:0 ? expand('%:p') : fnamemodify(expand(a:1), ':p:gs?\\?/?')
-  if has_key(s:sid_cache, path)
-    return s:sid_cache[path]
-  endif
   let snames = lim#misc#get_cmdresults('scriptnames')
   call map(snames, 'substitute(v:val, ''\s*\d*\s*:\s*\(.*\)'', ''\=expand(submatch(1))'', "")')
   let sid = index(snames, path)+1
-  if !sid
-    let s:sid_cache[path] = sid
-  endif
   return sid
 endfunction
 "}}}
@@ -95,16 +89,55 @@ function! lim#misc#match_sids(pat) "{{{
   return sids
 endfunction
 "}}}
-function! lim#misc#get_scriptname(sid) "{{{
+function! lim#misc#get_scriptpath(sid) "{{{
+  let snames = lim#misc#get_cmdresults('scriptnames')
+  let path = substitute(get(snames, a:sid-1, ''), '^\s*\d\+:\s\+', '', '')
+  return path=='' ? '' : fnamemodify(path, ':p')
+endfunction
+"}}}
+function! lim#misc#get_scriptinfos(...) "{{{
+  let pat = !a:0 ? expand('%') : type(a:1)==s:TYPE_NR ? '^\s*'.a:1.':' : escape(a:1, ' .\')
+  let snames = lim#misc#get_cmdresults('scriptnames')
+  let ret = []
+  let idx = match(snames, pat)
+  while idx!=-1
+    call add(ret, snames[idx])
+    let idx = match(snames, pat, idx+1)
+  endwhile
+  return ret
 endfunction
 "}}}
 
+function! lim#misc#get_sfuncs(...) "{{{
+  let path = a:0 ? expand(a:1) : expand('%')
+  let sid = lim#misc#get_sid(path)
+  if !sid
+    exe 'source' path
+    let sid = lim#misc#get_sid(path)
+    if !sid
+      return {}
+    end
+  end
+  let prefix = '<SNR>'. sid. '_'
+  let funcs = lim#misc#get_cmdresults('function')
+  let filter_pat = '^\s*function '. prefix
+  let map_pat = prefix. '\zs\w\+'
+  let ret = {}
+  for func in map(filter(funcs, 'v:val =~# filter_pat'), 'matchstr(v:val, map_pat)')
+    let ret[func] = function(prefix. func)
+  endfor
+  return ret
+endfunction
+"}}}
+
+
 "======================================
 "Data:
-function! lim#misc#uniqify(list) "{{{
+function! lim#misc#uniq(list) "{{{
   return s:newUniqifier(a:list).mill()
 endfunction
 "}}}
+
 
 "======================================
 "System:
