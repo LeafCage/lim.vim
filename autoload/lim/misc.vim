@@ -112,8 +112,10 @@ function! lim#misc#get_sfuncs(...) "{{{
   let path = a:0 ? expand(a:1) : expand('%')
   let sid = lim#misc#get_sid(path)
   if !sid
-    exe 'source' path
-    let sid = lim#misc#get_sid(path)
+    if !(path==expand('%') || path==expand('%:p'))
+      exe 'source' path
+      let sid = lim#misc#get_sid(path)
+    end
     if !sid
       return {}
     end
