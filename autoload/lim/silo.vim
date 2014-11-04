@@ -143,10 +143,8 @@ function! s:Silo._get_refinepat_by_dict(dictwhere) "{{{
     let idx = index(self.fields, field)
     if idx==-1
       echoerr 'silo: invalid field name >' field
-    elseif type(val)!=s:TYPE_STR
-      throw 'silo: invalid condition > '. string(a:dictwhere)
     end
-    let order[idx] = val
+    let order[idx] = type(val)!=s:TYPE_STR ? string(val) : val
   endfor
   let i = 0
   let pat = '^'
