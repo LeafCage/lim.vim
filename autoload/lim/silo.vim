@@ -76,8 +76,10 @@ endfunction
 "=============================================================================
 "Public:
 let s:Silo = {}
-function! lim#silo#newSilo(name, fields) "{{{
+function! lim#silo#newSilo(name, fields, ...) "{{{
+  let funcopt = get(a:, 1, {})
   let obj = copy(s:Silo)
+  let obj.key = get(funcopt, 'key', '')
   let obj.path = expand(g:lim#silo#rootdir).'/'.a:name
   let obj.dir = fnamemodify(obj.path, ':h')
   if s:_is_invalid_fields(a:fields)
@@ -93,7 +95,7 @@ function! lim#silo#newSilo(name, fields) "{{{
     end
   catch /E684:/
   endtry
-  let obj.save_records = copy(obj.records)
+  let obj.chgdtick = 0
   return obj
 endfunction
 "}}}
@@ -195,7 +197,7 @@ function! s:Silo._fmt_by_str(records, fmt) "{{{
 endfunction
 "}}}
 function! s:Silo.is_changed() "{{{
-  return self.records !=# self.save_records
+  return self.chgdtick
 endfunction
 "}}}
 function! s:Silo.has(where) "{{{
@@ -234,7 +236,7 @@ endfunction
 function! s:Silo.select_distinct(where, ...) "{{{
   let records = call(self.select, [a:where] + a:000, self)
   try
-    let ret = lim#misc#uniqify(records)
+    let ret = lim#misc#uniq(records)
     return ret
   catch /E117:/
     echoerr 'silo: select_distinct() depends misc-module > misc-module is not found.'
@@ -291,8 +293,29 @@ function! s:Silo.exclude(where, ...) "{{{
   throw 'silo: invalid format > '. stirng(fmt)
 endfunction
 "}}}
-function! s:Silo.create_nextkey(field) "{{{
-  return max(self.select({}, [a:field])) +1
+function! s:Silo.nextkey(...) "{{{
+  let field = get(a:, 1, self.key)
+  let self._save_nextkeys = get(self, '_save_chgdtick', -1) != self.chgdtick ? {} : self._save_nextkeys
+  let self._save_chgdtick = self.chgdtick
+  if has_key(self._save_nextkeys, field)
+    let self._save_nextkeys[field] = self._save_nextkeys[field] +1
+    return self._save_nextkeys[field]
+  elseif field!=''
+    let self._save_nextkeys[field] = max(self.select({}, [field])) +1
+    return self._save_nextkeys[field]
+  end
+  unlet self._save_chgdtick
+  echoerr 'lim-silo: keyfield is not defined.'
+endfunction
+"}}}
+function! s:Silo.set_nextkey(...) "{{{
+  if !a:0 || a:0==1 && self.key==''
+    echoerr 'lim-silo: 引数の数が足りません'
+  end
+  let val = a:000[-1]
+  let field = a:0>1 ? a:1 : self.key
+  let self._save_nextkeys = get(self, '_save_chgdtick', -1) != self.chgdtick ? {} : self._save_nextkeys
+  let self._save_nextkeys[field] = val-1
 endfunction
 "}}}
 function! s:Silo.commit() "{{{
@@ -306,12 +329,14 @@ function! s:Silo.commit() "{{{
 endfunction
 "}}}
 function! s:Silo.insert(rec) "{{{
-  if type(get(a:rec, 0, []))==s:TYPE_STR
+  if type(get(a:rec, 0, []))!=s:TYPE_LIST
     return self._insert(a:rec)
   end
+  let ret = 0
   for rec in a:rec
-    call self._insert(rec)
+    let ret = self._insert(rec) || ret
   endfor
+  return ret
 endfunction
 "}}}
 function! s:Silo.update(where, rec) "{{{
@@ -349,6 +374,7 @@ function! s:Silo.delete(where) "{{{
   else
     call filter(self.records, 'v:val !~# a:where')
   end
+  let self.chgdtick += 1
   return self
 endfunction
 "}}}
@@ -383,6 +409,7 @@ function! s:Silo._insert(rec) "{{{
     return 2
   end
   call add(self.records, s:_innerstrify(a:rec))
+  let self.chgdtick += 1
 endfunction
 "}}}
 function! s:Silo._get_update_targidxs(where) "{{{
@@ -409,6 +436,7 @@ function! s:Silo._update_byreclist(reclist, targlen, targidx) "{{{
     return 1
   end
   let self.records[a:targidx] = s:_innerstrify(a:reclist)
+  let self.chgdtick += 1
 endfunction
 "}}}
 function! s:Silo._update_byrecdict(recdict, targidxs) "{{{
@@ -429,6 +457,7 @@ function! s:Silo._update_byrecdict(recdict, targidxs) "{{{
     let seens[str] = 1
   endfor
   let self.records = records
+  let self.chgdtick += 1
 endfunction
 "}}}
 function! s:Silo._fieldkeydict_to_idxkeydict(destdict) "{{{
