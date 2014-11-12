@@ -75,79 +75,77 @@ endfunction
 let s:Builder = {}
 function! s:newBuilder(...) "{{{
   let obj = copy(s:Builder)
-  let obj.variadic = a:000
-  let obj.variadiclen = a:0
+  let obj.fmts = a:000
+  let obj.fmtlen = a:0
+  let obj.fmttypes = map(copy(a:000), 'type(v:val)')
   return obj
 endfunction
 "}}}
 function! s:Builder.activate(records, fields) "{{{
   let self.recs = map(a:records, 's:_listify(v:val)')
-  let self.fields = a:fields
+  let self.fieldidxs = map(copy(self.fmts), 'self.fmttypes[(v:key)]==s:TYPE_LIST ? s:_index_list(a:fields, v:val) : s:_index_str(a:fields, v:val)')
 endfunction
 "}}}
-function! s:Builder._get_field(idx) "{{{
-  return get(self.variadic, a:idx)
+function! s:_index_str(fields, str) "{{{
+  let idx = index(a:fields, a:str)
+  if idx==-1
+    throw 'lim-silo: invalid field name > '. a:str
+  end
+  return idx
 endfunction
 "}}}
-function! s:Builder.is_overidx(variaidx) "{{{
-  return a:variaidx >= self.variadiclen
+function! s:_index_list(fields, list) "{{{
+  let ret = map(copy(a:list), 'index(a:fields, v:val)')
+  if index(ret, -1)!=-1
+    throw 'lim-silo: invalid fields > '. a:list
+  end
+  return ret
 endfunction
 "}}}
-function! s:Builder.build(variaidx, bgni, p_stopi) "{{{
-  let field = self._get_field(a:variaidx)
-  let type = type(field)
-  let [stopi, sample] = self['_get_edge_'.type](field, a:bgni, a:p_stopi)
-  let childvariaidx = a:variaidx+1
-  if self.is_overidx(childvariaidx)
+function! s:Builder._get_fmt_of(idx) "{{{
+  return [self.fieldidxs[a:idx], self.fmttypes[a:idx]]
+endfunction
+"}}}
+function! s:Builder.is_overidx(fmtidx) "{{{
+  return a:fmtidx >= self.fmtlen
+endfunction
+"}}}
+function! s:Builder.build(fmtidx, bgni, p_stopi) "{{{
+  let [fieldidx, type] = self._get_fmt_of(a:fmtidx)
+  let edgefunc = '_get_edge_'.type
+  let [stopi, sample] = self[edgefunc](fieldidx, a:bgni, a:p_stopi)
+  let childfmtidx = a:fmtidx+1
+  if self.is_overidx(childfmtidx)
     let ret = [sample]
     while stopi < a:p_stopi
-      let [stopi, sample] = self['_get_edge_'.type](field, stopi, a:p_stopi)
+      let [stopi, sample] = self[edgefunc](fieldidx, stopi, a:p_stopi)
       call add(ret, sample)
     endw
     return [ret, stopi]
   end
-  let save_children = {}
-  let [child, bgni] = self.build(childvariaidx, a:bgni, stopi)
-  let save_children[string(sample)] = child
+  let [child, bgni] = self.build(childfmtidx, a:bgni, stopi)
   let ret = [[sample, child]]
   while bgni < a:p_stopi
-    let [stopi, sample] = self['_get_edge_'.type](field, bgni, a:p_stopi)
-    let [child, bgni] = self.build(childvariaidx, bgni, stopi)
-    let strsample = string(sample)
-    if has_key(save_children, strsample)
-      call extend(save_children[strsample], child)
-    else
-      call add(ret, [sample, child])
-    end
+    let [stopi, sample] = self[edgefunc](fieldidx, bgni, a:p_stopi)
+    let [child, bgni] = self.build(childfmtidx, bgni, stopi)
+    call add(ret, [sample, child])
   endw
   return [ret, bgni]
 endfunction
 "}}}
-function! s:Builder['_get_edge_'.s:TYPE_STR](field, bgni, stopi) "{{{
-  let idx = index(self.fields, a:field)
-  if idx==-1
-    throw 'lim-silo: invalid fieldname > '. a:field
-  end
-  let sample = self.recs[a:bgni][idx]
+function! s:Builder['_get_edge_'.s:TYPE_STR](fieldidx, bgni, stopi) "{{{
+  let sample = self.recs[a:bgni][a:fieldidx]
   let stopi = a:bgni+1
-  while stopi < a:stopi && self.recs[stopi][idx]==#sample
+  while stopi < a:stopi && self.recs[stopi][a:fieldidx]==#sample
     let stopi+=1
   endwhile
   return [stopi, sample]
 endfunction
 "}}}
-function! s:Builder['_get_edge_'.s:TYPE_LIST](fields, bgni, stopi) "{{{
-  let idxs = []
-  for field in a:fields
-    let idx = index(self.fields, field)
-    if idx==-1
-      throw 'lim-silo: invalid fieldname > '. a:field
-    end
-    call add(idxs, idx)
-  endfor
-  let sample = map(copy(idxs), 'self.recs[a:bgni][v:val]')
+function! s:Builder['_get_edge_'.s:TYPE_LIST](fieldidxs, bgni, stopi) "{{{
+  let sample = map(copy(a:fieldidxs), 'self.recs[a:bgni][v:val]')
   let stopi = a:bgni+1
-  while stopi < a:stopi && map(copy(idxs), 'self.recs[stopi][v:val]')==#sample
+  while stopi < a:stopi && map(copy(a:fieldidxs), 'self.recs[stopi][v:val]')==#sample
     let stopi+=1
   endwhile
   return [stopi, sample]
