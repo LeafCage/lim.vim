@@ -72,6 +72,88 @@ function! s:_sub_4updatedict(sub) "{{{
 endfunction
 "}}}
 
+let s:Builder = {}
+function! s:newBuilder(...) "{{{
+  let obj = copy(s:Builder)
+  let obj.variadic = a:000
+  let obj.variadiclen = a:0
+  return obj
+endfunction
+"}}}
+function! s:Builder.activate(records, fields) "{{{
+  let self.recs = map(a:records, 's:_listify(v:val)')
+  let self.fields = a:fields
+endfunction
+"}}}
+function! s:Builder._get_field(idx) "{{{
+  return get(self.variadic, a:idx)
+endfunction
+"}}}
+function! s:Builder.is_overidx(variaidx) "{{{
+  return a:variaidx >= self.variadiclen
+endfunction
+"}}}
+function! s:Builder.build(variaidx, bgni, p_stopi) "{{{
+  let field = self._get_field(a:variaidx)
+  let type = type(field)
+  let [stopi, sample] = self['_get_edge_'.type](field, a:bgni, a:p_stopi)
+  let childvariaidx = a:variaidx+1
+  if self.is_overidx(childvariaidx)
+    let ret = [sample]
+    while stopi < a:p_stopi
+      let [stopi, sample] = self['_get_edge_'.type](field, stopi, a:p_stopi)
+      call add(ret, sample)
+    endw
+    return [ret, stopi]
+  end
+  let save_children = {}
+  let [child, bgni] = self.build(childvariaidx, a:bgni, stopi)
+  let save_children[string(sample)] = child
+  let ret = [[sample, child]]
+  while bgni < a:p_stopi
+    let [stopi, sample] = self['_get_edge_'.type](field, bgni, a:p_stopi)
+    let [child, bgni] = self.build(childvariaidx, bgni, stopi)
+    let strsample = string(sample)
+    if has_key(save_children, strsample)
+      call extend(save_children[strsample], child)
+    else
+      call add(ret, [sample, child])
+    end
+  endw
+  return [ret, bgni]
+endfunction
+"}}}
+function! s:Builder['_get_edge_'.s:TYPE_STR](field, bgni, stopi) "{{{
+  let idx = index(self.fields, a:field)
+  if idx==-1
+    throw 'lim-silo: invalid fieldname > '. a:field
+  end
+  let sample = self.recs[a:bgni][idx]
+  let stopi = a:bgni+1
+  while stopi < a:stopi && self.recs[stopi][idx]==#sample
+    let stopi+=1
+  endwhile
+  return [stopi, sample]
+endfunction
+"}}}
+function! s:Builder['_get_edge_'.s:TYPE_LIST](fields, bgni, stopi) "{{{
+  let idxs = []
+  for field in a:fields
+    let idx = index(self.fields, field)
+    if idx==-1
+      throw 'lim-silo: invalid fieldname > '. a:field
+    end
+    call add(idxs, idx)
+  endfor
+  let sample = map(copy(idxs), 'self.recs[a:bgni][v:val]')
+  let stopi = a:bgni+1
+  while stopi < a:stopi && map(copy(idxs), 'self.recs[stopi][v:val]')==#sample
+    let stopi+=1
+  endwhile
+  return [stopi, sample]
+endfunction
+"}}}
+
 
 "=============================================================================
 "Public:
@@ -174,22 +256,22 @@ function! s:Silo._get_fieldidxs(fmt) "{{{
   return fieldidxs
 endfunction
 "}}}
-function! s:Silo._fmt_by_list(records, fmt) "{{{
-  if a:fmt==[]
+function! s:Silo._fmt_by_list(records, listfmt) "{{{
+  if a:listfmt==[]
     return map(a:records, 's:_listify(v:val)')
   end
-  let fieldidxs = self._get_fieldidxs(a:fmt)
-  if len(a:fmt)==1
+  let fieldidxs = self._get_fieldidxs(a:listfmt)
+  if len(a:listfmt)==1
     let idx = fieldidxs[0]
     return map(a:records, 's:_listify(v:val)[idx]')
   end
   return map(a:records, 's:_fmtmap_by_list(v:val, fieldidxs)')
 endfunction
 "}}}
-function! s:Silo._fmt_by_str(records, fmt) "{{{
-  let idx = index(self.fields, a:fmt)
+function! s:Silo._fmt_by_str(records, strfmt) "{{{
+  let idx = index(self.fields, a:strfmt)
   if idx==-1
-    throw 'lim-silo: invalid format > '. a:fmt
+    throw 'lim-silo: invalid format > '. a:strfmt
   end
   return map(a:records, 's:_listify(v:val)[idx]')
 endfunction
@@ -210,18 +292,7 @@ endfunction
 "}}}
 function! s:Silo.select(where, ...) "{{{
   let fmt = get(a:, 1, [])
-  let type = type(a:where)
-  if empty(a:where)
-    let refineds = copy(self.records)
-  elseif type==s:TYPE_LIST
-    let pat = self._get_refinepat_by_list(a:where)
-    let refineds = filter(copy(self.records), 'v:val ==# pat')
-  elseif type==s:TYPE_DICT
-    let pat = self._get_refinepat_by_dict(a:where)
-    let refineds = filter(copy(self.records), 'v:val =~# pat')
-  else
-    let refineds = filter(copy(self.records), 'v:val =~# a:where')
-  end
+  let refineds = self._get_refineds(a:where)
   let type = type(fmt)
   if type==s:TYPE_LIST
     return self._fmt_by_list(refineds, fmt)
@@ -237,9 +308,39 @@ function! s:Silo.select_distinct(where, ...) "{{{
     let ret = lim#misc#uniq(records)
     return ret
   catch /E117:/
-    echoerr 'silo: select_distinct() depends misc-module > misc-module is not found.'
+    echoerr 'silo: select_distinct() depends misc-module but it is not found.'
     return records
   endtry
+endfunction
+"}}}
+function! s:Silo.select_grouped(where, ...) "{{{
+  let builder = call('s:newBuilder', a:000)
+  let refineds = self._get_refineds(a:where)
+  let len = len(refineds)
+  if len==0
+    return []
+  end
+  call builder.activate(refineds, self.fields)
+  let idx = 0
+  if builder.is_overidx(idx)
+    return []
+  end
+  return builder.build(idx, 0, len)[0]
+endfunction
+"}}}
+function! s:Silo._get_refineds(where) "{{{
+  let type = type(a:where)
+  if empty(a:where)
+    return copy(self.records)
+  elseif type==s:TYPE_LIST
+    let pat = self._get_refinepat_by_list(a:where)
+    return filter(copy(self.records), 'v:val ==# pat')
+  elseif type==s:TYPE_DICT
+    let pat = self._get_refinepat_by_dict(a:where)
+    return filter(copy(self.records), 'v:val =~# pat')
+  else
+    return filter(copy(self.records), 'v:val =~# a:where')
+  end
 endfunction
 "}}}
 function! s:Silo.get(where, ...) "{{{
@@ -471,6 +572,7 @@ function! s:Silo._fieldkeydict_to_idxkeydict(destdict) "{{{
   return ret
 endfunction
 "}}}
+
 
 
 function! lim#silo#create_silo(name, cols) "{{{
