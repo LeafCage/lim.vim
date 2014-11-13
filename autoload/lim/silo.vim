@@ -81,9 +81,10 @@ function! s:newBuilder(...) "{{{
   return obj
 endfunction
 "}}}
-function! s:Builder.activate(records, fields) "{{{
-  let self.recs = map(a:records, 's:_listify(v:val)')
+function! s:Builder.activate(records, fields, fieldslen) "{{{
+  let self.records = a:records
   let self.fieldidxs = map(copy(self.fmts), 'self.fmttypes[(v:key)]==s:TYPE_LIST ? s:_index_list(a:fields, v:val) : s:_index_str(a:fields, v:val)')
+  let self.fieldslen = a:fieldslen
 endfunction
 "}}}
 function! s:_index_str(fields, str) "{{{
@@ -110,45 +111,72 @@ function! s:Builder.is_overidx(fmtidx) "{{{
   return a:fmtidx >= self.fmtlen
 endfunction
 "}}}
-function! s:Builder.build(fmtidx, bgni, p_stopi) "{{{
+function! s:Builder.build(fmtidx, records, len) "{{{
   let [fieldidx, type] = self._get_fmt_of(a:fmtidx)
-  let edgefunc = '_get_edge_'.type
-  let [stopi, sample] = self[edgefunc](fieldidx, a:bgni, a:p_stopi)
   let childfmtidx = a:fmtidx+1
   if self.is_overidx(childfmtidx)
-    let ret = [sample]
-    while stopi < a:p_stopi
-      let [stopi, sample] = self[edgefunc](fieldidx, stopi, a:p_stopi)
-      call add(ret, sample)
-    endw
-    return [ret, stopi]
+    return self['_termsamples_'.type](a:records, fieldidx)
   end
-  let [child, bgni] = self.build(childfmtidx, a:bgni, stopi)
-  let ret = [[sample, child]]
-  while bgni < a:p_stopi
-    let [stopi, sample] = self[edgefunc](fieldidx, bgni, a:p_stopi)
-    let [child, bgni] = self.build(childfmtidx, bgni, stopi)
+  let ret = []
+  let len = a:len
+  while len > 0
+    let [refined, refinedlen, sample] = self._refine_for_child(fieldidx, a:records, type)
+    let child = self.build(childfmtidx, refined, refinedlen)
     call add(ret, [sample, child])
+    let len -= refinedlen
   endw
-  return [ret, bgni]
+  return ret
 endfunction
 "}}}
-function! s:Builder['_get_edge_'.s:TYPE_STR](fieldidx, bgni, stopi) "{{{
-  let sample = self.recs[a:bgni][a:fieldidx]
-  let stopi = a:bgni+1
-  while stopi < a:stopi && self.recs[stopi][a:fieldidx]==#sample
-    let stopi+=1
-  endwhile
-  return [stopi, sample]
+function! s:Builder['_termsamples_'.s:TYPE_STR](records, fieldidx) "{{{
+    let pat = '^\%(.\{-}'. s:SEP. '\)\{'. a:fieldidx. '}\zs.\{-}\ze\%('. s:SEP. '\|$\)'
+    return map(a:records, 'matchstr(v:val, pat)')
 endfunction
 "}}}
-function! s:Builder['_get_edge_'.s:TYPE_LIST](fieldidxs, bgni, stopi) "{{{
-  let sample = map(copy(a:fieldidxs), 'self.recs[a:bgni][v:val]')
-  let stopi = a:bgni+1
-  while stopi < a:stopi && map(copy(a:fieldidxs), 'self.recs[stopi][v:val]')==#sample
-    let stopi+=1
+function! s:Builder['_termsamples_'.s:TYPE_LIST](records, fieldidxs) "{{{
+  return map(a:records, 's:_inmap_buildterm(s:_listify(v:val), a:fieldidxs)')
+endfunction
+"}}}
+function! s:_inmap_buildterm(rec, fieldidxs) "{{{
+  return map(copy(a:fieldidxs), 'a:rec[v:val]')
+endfunction
+"}}}
+function! s:Builder._refine_for_child(fieldidx, records, type) "{{{
+  let record = remove(a:records, 0)
+  let [sample, pat] = self['_get_sample_and_pat_'.a:type](a:fieldidx, record)
+  let refined = [record]
+  let len = 1
+  let i = match(a:records, pat)
+  while i != -1
+    call add(refined, remove(a:records, i))
+    let len += 1
+    let i = match(a:records, pat)
   endwhile
-  return [stopi, sample]
+  return [refined, len, sample]
+endfunction
+"}}}
+function! s:Builder['_get_sample_and_pat_'.s:TYPE_STR](fieldidx, record) "{{{
+  let sample = matchstr(a:record, s:_get_samplegetpat(a:fieldidx))
+  let pat = '^\%(.\{-}'. s:SEP. '\)\{'. a:fieldidx. '}'. sample. '\%('. s:SEP. '\|$\)'
+  return [sample, pat]
+endfunction
+"}}}
+function! s:Builder['_get_sample_and_pat_'.s:TYPE_LIST](fieldidxs, record) "{{{
+  let sample = map(copy(a:fieldidxs), 'matchstr(a:record, s:_get_samplegetpat(v:val))')
+  let pat = '^'
+  let i = 0
+  while i < self.fieldslen-1
+    let idx = index(a:fieldidxs, i)
+    let pat .= idx==-1 ? '\%(.\{-}\)'.s:SEP : sample[idx].s:SEP
+    let i += 1
+  endw
+  let idx = index(a:fieldidxs, i)
+  let pat .= idx==-1 ? '\%(.\{-}\)'.s:SEP : sample[idx]
+  return [sample, pat]
+endfunction
+"}}}
+function! s:_get_samplegetpat(fieldidx) "{{{
+  return '^\%(.\{-}'. s:SEP. '\)\{'. a:fieldidx. '}\zs.\{-}\ze\%('. s:SEP. '\|$\)'
 endfunction
 "}}}
 
@@ -318,12 +346,12 @@ function! s:Silo.select_grouped(where, ...) "{{{
   if len==0
     return []
   end
-  call builder.activate(refineds, self.fields)
+  call builder.activate(refineds, self.fields, self.fieldslen)
   let idx = 0
   if builder.is_overidx(idx)
     return []
   end
-  return builder.build(idx, 0, len)[0]
+  return builder.build(idx, refineds, len)
 endfunction
 "}}}
 function! s:Silo._get_refineds(where) "{{{
