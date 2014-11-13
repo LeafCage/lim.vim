@@ -534,9 +534,6 @@ function! s:Silo.rearrange(destfields) "{{{
   return self
 endfunction
 "}}}
-function! s:Silo.replace(field, src, dest) "{{{
-endfunction
-"}}}
 function! s:Silo._insert(rec) "{{{
   if self.has(a:rec)
     return 1
@@ -613,19 +610,10 @@ endfunction
 
 
 
-function! lim#silo#create_silo(name, cols) "{{{
-endfunction
-"}}}
 function! lim#silo#drop_silo(name) "{{{
 endfunction
 "}}}
 function! lim#silo#rename_silo(name, to) "{{{
-endfunction
-"}}}
-function! lim#silo#select(name, ...) "{{{
-endfunction
-"}}}
-function! lim#silo#insert(name, values) "{{{
 endfunction
 "}}}
 
