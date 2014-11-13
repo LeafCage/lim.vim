@@ -129,12 +129,24 @@ function! s:Builder.build(fmtidx, records, len) "{{{
 endfunction
 "}}}
 function! s:Builder['_termsamples_'.s:TYPE_STR](records, fieldidx) "{{{
-    let pat = '^\%(.\{-}'. s:SEP. '\)\{'. a:fieldidx. '}\zs.\{-}\ze\%('. s:SEP. '\|$\)'
-    return map(a:records, 'matchstr(v:val, pat)')
+  let pat = s:_get_samplegetpat(a:fieldidx)
+  let ret = map(a:records, 'matchstr(v:val, pat)')
+  try
+    let ret = lim#misc#uniq(ret)
+  catch /E117/
+    echoerr 'lim-silo: select_grouped() depends misc-module but it is not found.'
+  endtry
+  return ret
 endfunction
 "}}}
 function! s:Builder['_termsamples_'.s:TYPE_LIST](records, fieldidxs) "{{{
-  return map(a:records, 's:_inmap_buildterm(s:_listify(v:val), a:fieldidxs)')
+  let ret = map(a:records, 's:_inmap_buildterm(s:_listify(v:val), a:fieldidxs)')
+  try
+    let ret = lim#misc#uniq(ret)
+  catch /E117/
+    echoerr 'lim-silo: select_grouped() depends misc-module but it is not found.'
+  endtry
+  return ret
 endfunction
 "}}}
 function! s:_inmap_buildterm(rec, fieldidxs) "{{{
@@ -171,7 +183,7 @@ function! s:Builder['_get_sample_and_pat_'.s:TYPE_LIST](fieldidxs, record) "{{{
     let i += 1
   endw
   let idx = index(a:fieldidxs, i)
-  let pat .= idx==-1 ? '\%(.\{-}\)'.s:SEP : sample[idx]
+  let pat .= idx==-1 ? '\%(.\{-}\)' : sample[idx]
   return [sample, pat]
 endfunction
 "}}}
@@ -334,7 +346,7 @@ function! s:Silo.select_distinct(where, ...) "{{{
     let ret = lim#misc#uniq(records)
     return ret
   catch /E117:/
-    echoerr 'silo: select_distinct() depends misc-module but it is not found.'
+    echoerr 'lim-silo: select_distinct() depends misc-module but it is not found.'
     return records
   endtry
 endfunction
