@@ -40,7 +40,7 @@ endfunction
 "}}}
 function! s:_inmap_chk_fmt(record, fieldidxs) "{{{
   let rec = s:_listify(a:record)
-  return s:_innerstrify(map(a:fieldidxs, 'v:val==-1 ? "" : rec[(v:val)]'))
+  return s:_innerstrify(map(copy(a:fieldidxs), 'v:val==-1 ? "" : rec[(v:val)]'))
 endfunction
 "}}}
 function! s:_cnv_magicpat(str, m) "{{{
@@ -521,6 +521,7 @@ function! s:Silo.sort(...) "{{{
   else
     call sort(self.records)
   end
+  let self.chgdtick += 1
   return self
 endfunction
 "}}}
@@ -531,6 +532,7 @@ function! s:Silo.rearrange(destfields) "{{{
   let fieldidxs = self._get_fieldidxs(a:destfields)
   call map(self.records, 's:_inmap_rearrange(v:val, fieldidxs)')
   let self.fields = a:destfields
+  let self.chgdtick += 1
   return self
 endfunction
 "}}}
