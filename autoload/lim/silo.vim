@@ -134,7 +134,7 @@ function! s:Builder['_termsamples_'.s:TYPE_STR](records, fieldidx) "{{{
   try
     let ret = lim#misc#uniq(ret)
   catch /E117/
-    echoerr 'lim-silo: select_grouped() depends misc-module but it is not found.'
+    echoerr 'silo-select_grouped: select_grouped() depends misc-module but it is not found.'
   endtry
   return ret
 endfunction
@@ -144,7 +144,7 @@ function! s:Builder['_termsamples_'.s:TYPE_LIST](records, fieldidxs) "{{{
   try
     let ret = lim#misc#uniq(ret)
   catch /E117/
-    echoerr 'lim-silo: select_grouped() depends misc-module but it is not found.'
+    echoerr 'silo-select_grouped: select_grouped() depends misc-module but it is not found.'
   endtry
   return ret
 endfunction
@@ -289,7 +289,7 @@ endfunction
 function! s:Silo._get_fieldidxs(fmt) "{{{
   let fieldidxs = map(copy(a:fmt), 'index(self.fields, v:val)')
   if index(fieldidxs, -1)!=-1
-    throw 'lim-silo: invalid format > '. string(a:fmt)
+    throw 'silo: invalid format > '. string(a:fmt)
   end
   return fieldidxs
 endfunction
@@ -309,7 +309,7 @@ endfunction
 function! s:Silo._fmt_by_str(records, strfmt) "{{{
   let idx = index(self.fields, a:strfmt)
   if idx==-1
-    throw 'lim-silo: invalid format > '. a:strfmt
+    throw 'silo: invalid format > '. a:strfmt
   end
   return map(a:records, 's:_listify(v:val)[idx]')
 endfunction
@@ -346,7 +346,7 @@ function! s:Silo.select_distinct(where, ...) "{{{
     let ret = lim#misc#uniq(records)
     return ret
   catch /E117:/
-    echoerr 'lim-silo: select_distinct() depends misc-module but it is not found.'
+    echoerr 'silo-select_distinct: select_distinct() depends misc-module but it is not found.'
     return records
   endtry
 endfunction
@@ -442,12 +442,12 @@ function! s:Silo.nextkey(...) "{{{
     return self._save_nextkeys[field]
   end
   unlet self._save_chgdtick
-  echoerr 'lim-silo: keyfield is not defined.'
+  echoerr 'silo-nextkey: keyfield is not defined.'
 endfunction
 "}}}
 function! s:Silo.set_nextkey(...) "{{{
   if !a:0 || a:0==1 && self.key==''
-    echoerr 'lim-silo: 引数の数が足りません'
+    echoerr 'silo-set_nextkey: 引数の数が足りません'
   end
   let val = a:000[-1]
   let field = a:0>1 ? a:1 : self.key
@@ -541,7 +541,7 @@ function! s:Silo._insert(rec) "{{{
     return 1
   end
   if len(a:rec)!=self.fieldslen
-    echoerr 'lim-silo : invalid insert >' a:rec
+    echoh ErrorMsg | echom 'silo-insert : invalid insert >' a:rec | echoh NONE
     return 2
   end
   call add(self.records, s:_innerstrify(a:rec))
@@ -562,13 +562,13 @@ endfunction
 "}}}
 function! s:Silo._update_byreclist(reclist, targlen, targidx) "{{{
   if a:targlen>1
-    echoerr 'lim-silo: 条件が一意ではありません。'
+    echoh ErrorMsg | echom 'silo-update: 条件が一意ではありません。' | echoh NONE
     return 2
   elseif len(a:reclist)!=self.fieldslen
-    echoerr 'lim-silo : fields'' len is invalid >' a:reclist
+    echoh ErrorMsg | echom 'silo-update : fields'' len is invalid >' a:reclist | echoh NONE
     return 2
   elseif self.has(a:reclist)
-    echoerr 'lim-silo: 既に存在するレコードです。'
+    echoh ErrorMsg | echom 'silo-update: 既に存在するレコードです。' | echoh NONE
     return 1
   end
   let self.records[a:targidx] = s:_innerstrify(a:reclist)
@@ -588,7 +588,7 @@ function! s:Silo._update_byrecdict(recdict, targidxs) "{{{
   for record in records
     let str = ':'. record
     if has_key(seens, str)
-      throw 'lim-silo: record is duplicated > '. record
+      throw 'silo-update: record is duplicated > '. record
     end
     let seens[str] = 1
   endfor
@@ -604,7 +604,7 @@ function! s:Silo._fieldkeydict_to_idxkeydict(destdict) "{{{
     let ret[idx] = dest. (idx==lastidx ? '' : s:SEP)
   endfor
   if has_key(ret, '-1')
-    throw 'lim-silo: invalid field > '. ret['-1']
+    throw 'silo-update: invalid field > '. ret['-1']
   end
   return ret
 endfunction
