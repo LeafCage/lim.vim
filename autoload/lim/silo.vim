@@ -197,7 +197,7 @@ endfunction
 "Public:
 let s:Silo = {}
 function! lim#silo#newSilo(name, fields, ...) "{{{
-  let funcopt = get(a:, 1, {})
+  let funcopt = a:0 ? a:1 : {}
   let obj = copy(s:Silo)
   let obj.key = get(funcopt, 'key', '')
   let obj.path = expand(g:lim#silo#rootdir).'/'.a:name
@@ -329,7 +329,7 @@ function! s:Silo.has(where) "{{{
 endfunction
 "}}}
 function! s:Silo.select(where, ...) "{{{
-  let fmt = get(a:, 1, [])
+  let fmt = a:0 ? a:1 : []
   let refineds = self._get_refineds(a:where)
   let type = type(fmt)
   if type==s:TYPE_LIST
@@ -382,7 +382,7 @@ function! s:Silo._get_refineds(where) "{{{
 endfunction
 "}}}
 function! s:Silo.get(where, ...) "{{{
-  let fmt = get(a:, 1, [])
+  let fmt = a:0 ? a:1 : []
   let type = type(a:where)
   if empty(a:where)
     let idx = self.records==[] ? -1 : 0
@@ -408,7 +408,7 @@ function! s:Silo.get(where, ...) "{{{
 endfunction
 "}}}
 function! s:Silo.exclude(where, ...) "{{{
-  let fmt = get(a:, 1, [])
+  let fmt = a:0 ? a:1 : []
   let type = type(a:where)
   if empty(a:where)
     let refineds = copy(self.records)
@@ -431,7 +431,7 @@ function! s:Silo.exclude(where, ...) "{{{
 endfunction
 "}}}
 function! s:Silo.nextkey(...) "{{{
-  let field = get(a:, 1, self.key)
+  let field = a:0 ? a:1 : self.key
   let self._save_nextkeys = get(self, '_save_chgdtick', -1) != self.chgdtick ? {} : self._save_nextkeys
   let self._save_chgdtick = self.chgdtick
   if has_key(self._save_nextkeys, field)

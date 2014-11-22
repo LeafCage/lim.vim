@@ -52,7 +52,7 @@ function! s:newClassifier(candidates, longoptbgn, shortoptbgn) "{{{
 endfunction
 "}}}
 function! s:Classifier.set_classified_candies(...) "{{{
-  let self.beens = get(a:, 1, [])
+  let self.beens = a:0 ? a:1 : []
   for candy in self.candidates
     call self._classify_candy(candy)
     unlet candy
@@ -102,7 +102,7 @@ endfunction
 let s:Cmdcmpl = {}
 function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj = copy(s:Cmdcmpl)
-  let funcopts = get(a:, 1, {})
+  let funcopts = a:0 ? a:1 : {}
   let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
   let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
   let obj.order = get(funcopts, 'order', ['long', 'short', 'other'])
@@ -149,10 +149,11 @@ function! s:Cmdcmpl.is_matched(pat) "{{{
   return self.arglead =~# a:pat
 endfunction
 "}}}
-function! s:Cmdcmpl.get_arg(pat, ...) "{{{
+function! s:Cmdcmpl.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.beens)
 endfunction
 "}}}
+let s:Cmdcmpl.get_arg = s:Cmdcmpl.get
 function! s:Cmdcmpl.match_args(pat) "{{{
   return s:_match_args(a:pat, copy(self.beens))
 endfunction
@@ -219,7 +220,7 @@ endfunction
 let s:CmdParser = {}
 function! lim#cmddef#newCmdParser(args, ...) "{{{
   let obj = copy(s:CmdParser)
-  let funcopts = get(a:, 1, {})
+  let funcopts = a:0 ? a:1 : {}
   let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
   let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
   let obj.assignpat = get(funcopts, 'assignpat', '=')
@@ -233,10 +234,11 @@ endfunction
 "}}}
 let s:CmdParser._get_optignorepat = s:func._get_optignorepat
 let s:CmdParser._get_arg = s:func._get_arg
-function! s:CmdParser.get_arg(pat, ...) "{{{
+function! s:CmdParser.get(pat, ...) "{{{
   return s:_get_arg(a:pat, a:000, self.args)
 endfunction
 "}}}
+let s:CmdParser.get_arg = s:CmdParser.get
 function! s:CmdParser.match_args(pat) "{{{
   return s:_match_args(a:pat, copy(self.args))
 endfunction
@@ -252,7 +254,7 @@ function! s:CmdParser.filter(pat, ...) "{{{
 endfunction
 "}}}
 function! s:CmdParser.divide(pat, ...) "{{{
-  let way = get(a:, 1, 'sep')
+  let way = a:0 ? a:1 : 'sep'
   let self.len = len(self.args)
   try
     let ret = self['_divide_'. way](a:pat)

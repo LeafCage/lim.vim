@@ -88,7 +88,7 @@ endfunction
 let s:TYPE_LIST = type([])
 let s:TYPE_DICT = type({})
 function! lim#ui#select(prompt, choices, ...) "{{{
-  let funcopts = get(a:, 1, {})
+  let funcopts = a:0 ? a:1 : {}
   if empty(a:choices)
     return []
   end
