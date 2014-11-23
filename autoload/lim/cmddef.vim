@@ -12,12 +12,12 @@ function! s:func._get_optignorepat() "{{{
   return '^\%('.self.shortoptbgn.'\|'.self.longoptbgn.'\)\S'
 endfunction
 "}}}
-function! s:func._get_arg(pat, variadic, list) dict "{{{
+function! s:func._get_arg(pat, variadic, list) "{{{
   let type = type(a:pat)
   if type==s:TYPE_STR
     let default = get(a:variadic, 0, '')
     let idx = match(a:list, a:pat)
-    return idx==-1 ? default : a:list[i]
+    return idx==-1 ? default : a:list[idx]
   elseif type==s:TYPE_LIST
     let [idx, default] = [get(a:variadic, 0, 0), get(a:variadic, 1, '')]
     return get(filter(copy(a:list), 'index(a:pat, v:val)!=-1'), idx, default)
@@ -28,10 +28,10 @@ function! s:func._get_arg(pat, variadic, list) dict "{{{
     let ignorepat = self._get_optignorepat()
     call filter(list, 'v:val !~# ignorepat')
   end
-  return get(list, pat, default)
+  return get(list, a:pat, default)
 endfunction
 "}}}
-function! s:_match_args(pat, list) "{{{
+function! s:_matches(pat, list) "{{{
   if type(a:pat)==s:TYPE_LIST
     return filter(a:list, 'index(a:pat, v:val)!=-1')
   end
@@ -124,7 +124,7 @@ function! s:Cmdcmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
-function! s:Cmdcmpl.count_leftargs(...) "{{{
+function! s:Cmdcmpl.count_lefts(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : self._get_optignorepat()
   let ignorepat = ignorepat=='' ? NULL : ignorepat
@@ -153,20 +153,19 @@ function! s:Cmdcmpl.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.beens)
 endfunction
 "}}}
-let s:Cmdcmpl.get_arg = s:Cmdcmpl.get
-function! s:Cmdcmpl.match_args(pat) "{{{
-  return s:_match_args(a:pat, copy(self.beens))
+function! s:Cmdcmpl.matches(pat) "{{{
+  return s:_matches(a:pat, copy(self.beens))
 endfunction
 "}}}
-function! s:Cmdcmpl.get_leftarg(pat, ...) "{{{
+function! s:Cmdcmpl.get_left(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.leftwords)
 endfunction
 "}}}
-function! s:Cmdcmpl.match_leftargs(pat) "{{{
-  return s:_match_args(a:pat, copy(self.leftwords))
+function! s:Cmdcmpl.match_lefts(pat) "{{{
+  return s:_matches(a:pat, copy(self.leftwords))
 endfunction
 "}}}
-function! s:Cmdcmpl.mill_candidates(candidates, ...) "{{{
+function! s:Cmdcmpl.mill(candidates, ...) "{{{
   let matchtype = 'forward'
   let funcopts = {}
   let l = a:0
@@ -238,9 +237,8 @@ function! s:CmdParser.get(pat, ...) "{{{
   return s:_get_arg(a:pat, a:000, self.args)
 endfunction
 "}}}
-let s:CmdParser.get_arg = s:CmdParser.get
-function! s:CmdParser.match_args(pat) "{{{
-  return s:_match_args(a:pat, copy(self.args))
+function! s:CmdParser.matches(pat) "{{{
+  return s:_matches(a:pat, copy(self.args))
 endfunction
 "}}}
 function! s:CmdParser.filter(pat, ...) "{{{
