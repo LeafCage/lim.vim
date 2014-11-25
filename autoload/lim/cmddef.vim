@@ -239,8 +239,6 @@ function! lim#cmddef#newCmdParser(args, ...) "{{{
   let obj.endpat = '\%('. obj.assignpat. '\(.*\)\)\?$'
   let obj.args = a:args
   let obj.args_original = copy(a:args)
-  let pat = '^'. obj.longoptbgn
-  let obj.args_exceptlong = filter(copy(a:args), 'v:val !~# pat')
   return obj
 endfunction
 "}}}
@@ -276,39 +274,58 @@ function! s:CmdParser.divide(pat, ...) "{{{
   return ret==[[]] ? [] : ret
 endfunction
 "}}}
-function! s:CmdParser.parse_options(optdict) "{{{
+function! s:CmdParser.parse_options(optdict, ...) "{{{
+  let [self._first, self._last] = a:0 ? type(a:1)==s:TYPE_LIST ? a:1 : [a:1, a:1] : [0, -1]
+  let self._last = self._last < 0 ? len(self.args) + self._last : self._last
   let ret = {}
-  for [key, vallist] in items(a:optdict)
-    let default = 0
-    let pats = [self.longoptbgn. key]
-    let l = len(vallist)
-    while l
-      let l -= 1
-      exe 'let' (type(vallist[l])==s:TYPE_LIST ? 'pats' : 'default') '= vallist[l]'
-    endwhile
+  for [key, vals] in items(a:optdict)
+    let [default, pats] = self._get_default__pats(vals, key)
     let optval = self._get_optval(pats)
     let ret[key] = optval=='' ? default : optval
-    unlet default
+    unlet default vals
   endfor
   return ret
 endfunction
 "}}}
 
+function! s:CmdParser._get_default__pats(vals, key) "{{{
+  let [default, pats] = [0, [self.longoptbgn. a:key]]
+  let type = type(a:vals)
+  if type != s:TYPE_LIST
+    return type==s:TYPE_STR ? [0, [a:vals]] : [a:vals, pats]
+  end
+  let types = map(copy(a:vals), 'type(v:val)')
+  if index(types, s:TYPE_LIST)==-1
+    return [0, a:vals]
+  end
+  let l = len(a:vals)
+  while l
+    let l -= 1
+    exe 'let' (types[l]==s:TYPE_LIST ? 'pats' : 'default') '= a:vals[l]'
+  endwhile
+  return [default, pats]
+endfunction
+"}}}
 function! s:CmdParser._get_optval(optpats) "{{{
+  if self._first<0
+    return ''
+  end
   for pat in a:optpats
     if pat =~# '^'.self.longoptbgn || pat !~# '^'.self.shortoptbgn.'.$'
-      let i = match(self.args, '^'.pat. self.endpat)
-      if i!=-1
+      let i = match(self.args, '^'.pat. self.endpat, self._first)
+      if i!=-1 && i <= self._last
+        call self._adjust_ranges()
         return self._solve_optval(substitute(remove(self.args, i), '^'.pat, '', ''))
       end
     else
       let shortchr = matchstr(pat, '^'.self.shortoptbgn.'\zs.$')
-      let i = match(self.args_exceptlong, '^'.self.shortoptbgn.'.\{-}'.shortchr.'.\{-}'.self.endpat)
-      if i!=-1
+      let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self.longoptbgn, self.shortoptbgn, shortchr, self.endpat), self._first)
+      if i!=-1 && i <= self._last
         let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
         let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
         if self.args[i] ==# self.shortoptbgn
           unlet self.args[i]
+          call self._adjust_ranges()
         end
         return self._solve_optval(optval)
       end
@@ -319,6 +336,13 @@ endfunction
 "}}}
 function! s:CmdParser._solve_optval(optval) "{{{
   return a:optval=='' ? 1 : matchstr(a:optval, '^'. self.assignpat. '\zs.*')
+endfunction
+"}}}
+function! s:CmdParser._adjust_ranges() "{{{
+  if self._first == self._last
+    let self._first -= 1
+  end
+  let self._last -= 1
 endfunction
 "}}}
 function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
