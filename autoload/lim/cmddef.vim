@@ -279,59 +279,76 @@ function! s:CmdParser.parse_options(optdict, ...) "{{{
   let self._last = self._last < 0 ? len(self.args) + self._last : self._last
   let ret = {}
   for [key, vals] in items(a:optdict)
-    let [default, pats] = self._get_default__pats(vals, key)
-    let optval = self._get_optval(pats)
-    let ret[key] = optval=='' ? default : optval
-    unlet default vals
+    let ret[key] = self._get_optval(self._get_optval_evalset(vals, key))
+    unlet vals
   endfor
   return ret
 endfunction
 "}}}
 
-function! s:CmdParser._get_default__pats(vals, key) "{{{
-  let [default, pats] = [0, [self.longoptbgn. a:key]]
-  let type = type(a:vals)
-  if type != s:TYPE_LIST
-    return type==s:TYPE_STR ? [0, [a:vals]] : [a:vals, pats]
+function! s:CmdParser._get_optval_evalset(vals, part_of_pats) "{{{
+  let [default, pats, invertpats] = [0, [self.longoptbgn. a:part_of_pats], []]
+  if type(a:vals) != s:TYPE_LIST
+    return [a:vals, pats, invertpats]
   end
   let types = map(copy(a:vals), 'type(v:val)')
   if index(types, s:TYPE_LIST)==-1
-    return [0, a:vals]
+    return a:vals==[] ? [default, pats, invertpats] : types[0]== s:TYPE_STR ? [default, a:vals, invertpats] : [a:vals, pats, invertpats]
   end
-  let l = len(a:vals)
-  while l
-    let l -= 1
-    exe 'let' (types[l]==s:TYPE_LIST ? 'pats' : 'default') '= a:vals[l]'
+  let [len, i, done_pats] = [len(a:vals), 0, 0]
+  while i < len
+    if types[i]==s:TYPE_LIST
+      exe 'let' (done_pats ? 'invertpats' : 'pats') '= a:vals[i]'
+      let done_pats = 1
+    else
+      let default = a:vals[i]
+    end
+    let i += 1
   endwhile
-  return [default, pats]
+  return [default, pats, invertpats]
 endfunction
 "}}}
-function! s:CmdParser._get_optval(optpats) "{{{
+function! s:CmdParser._get_optval(optval_evalset) "{{{
+  let [default, optpats, invertpats] = a:optval_evalset
   if self._first<0
-    return ''
+    return default
   end
-  for pat in a:optpats
-    if pat =~# '^'.self.longoptbgn || pat !~# '^'.self.shortoptbgn.'.$'
-      let i = match(self.args, '^'.pat. self.endpat, self._first)
-      if i!=-1 && i <= self._last
-        call self._adjust_ranges()
-        return self._solve_optval(substitute(remove(self.args, i), '^'.pat, '', ''))
-      end
-    else
-      let shortchr = matchstr(pat, '^'.self.shortoptbgn.'\zs.$')
-      let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self.longoptbgn, self.shortoptbgn, shortchr, self.endpat), self._first)
-      if i!=-1 && i <= self._last
-        let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
-        let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
-        if self.args[i] ==# self.shortoptbgn
-          unlet self.args[i]
-          call self._adjust_ranges()
-        end
-        return self._solve_optval(optval)
-      end
+  for pat in invertpats
+    let [optval, is_matched] = self._solve_optpat(pat)
+    if is_matched
+      return 0
     end
   endfor
-  return ''
+  for pat in optpats
+    let [optval, is_matched] = self._solve_optpat(pat)
+    if is_matched
+      return optval
+    end
+  endfor
+  return default
+endfunction
+"}}}
+function! s:CmdParser._solve_optpat(pat) "{{{
+  if a:pat =~# '^'.self.longoptbgn || a:pat !~# '^'.self.shortoptbgn.'.$'
+    let i = match(self.args, '^'.a:pat. self.endpat, self._first)
+    if i!=-1 && i <= self._last
+      call self._adjust_ranges()
+      return [self._solve_optval(substitute(remove(self.args, i), '^'. a:pat, '', '')), 1]
+    end
+  else
+    let shortchr = matchstr(a:pat, '^'.self.shortoptbgn.'\zs.$')
+    let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self.longoptbgn, self.shortoptbgn, shortchr, self.endpat), self._first)
+    if i!=-1 && i <= self._last
+      let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
+      let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
+      if self.args[i] ==# self.shortoptbgn
+        unlet self.args[i]
+        call self._adjust_ranges()
+      end
+      return [self._solve_optval(optval), 1]
+    end
+  end
+  return ['', 0]
 endfunction
 "}}}
 function! s:CmdParser._solve_optval(optval) "{{{
