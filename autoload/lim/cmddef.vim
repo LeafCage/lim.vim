@@ -252,6 +252,18 @@ function! s:CmdParser.matches(pat) "{{{
   return s:_matches(a:pat, copy(self.args))
 endfunction
 "}}}
+function! s:CmdParser.divide(pat, ...) "{{{
+  let way = a:0 ? a:1 : 'sep'
+  let self._len = len(self.args)
+  try
+    let ret = self['_divide_'. way](a:pat)
+  catch /E716/
+    echoerr 'CmdParser: invalid way > "'. way. '"'
+    return self.arg
+  endtry
+  return ret==[[]] ? [] : ret
+endfunction
+"}}}
 function! s:CmdParser.filter(pat, ...) "{{{
   let __cmpparser_args__ = self.args
   if a:0
@@ -260,18 +272,6 @@ function! s:CmdParser.filter(pat, ...) "{{{
     endfor
   end
   return filter(__cmpparser_args__, a:pat)
-endfunction
-"}}}
-function! s:CmdParser.divide(pat, ...) "{{{
-  let way = a:0 ? a:1 : 'sep'
-  let self.len = len(self.args)
-  try
-    let ret = self['_divide_'. way](a:pat)
-  catch /E716/
-    echoerr 'CmdParser: 無効な引数です > "'. way. '"'
-    return self.arg
-  endtry
-  return ret==[[]] ? [] : ret
 endfunction
 "}}}
 function! s:CmdParser.parse_options(optdict, ...) "{{{
@@ -347,7 +347,7 @@ endfunction
 "}}}
 function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
   let i = a:bgnidx
-  while i < self.len
+  while i < self._len
     if index(a:patlist, self.args[i])!=-1
       return i
     end
@@ -382,7 +382,7 @@ function! s:CmdParser._divide_sep(pat) "{{{
     let i = j+1
     let j = eval(expr)
   endwhile
-  if i < self.len
+  if i < self._len
     call add(ret, self.args[i :-1])
   end
   return ret
@@ -398,7 +398,7 @@ function! s:CmdParser._divide_stop(pat) "{{{
     let i = j+1
     let j = eval(expr)
   endwhile
-  if i < self.len
+  if i < self._len
     call add(ret, self.args[i :-1])
   end
   return ret
