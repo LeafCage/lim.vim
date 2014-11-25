@@ -19,16 +19,29 @@ function! s:func._get_arg(pat, variadic, list) "{{{
     let idx = match(a:list, a:pat)
     return idx==-1 ? default : a:list[idx]
   elseif type==s:TYPE_LIST
-    let [idx, default] = [get(a:variadic, 0, 0), get(a:variadic, 1, '')]
+    let [idx, default] = s:_solve_variadic_for_set_default(a:variadic, [0, ''])
     return get(filter(copy(a:list), 'index(a:pat, v:val)!=-1'), idx, default)
   end
-  let default = get(a:variadic, -1, '')
+  let [is_ignoreopt, default] = s:_solve_variadic_for_set_default(a:variadic, [0, ''])
   let list = copy(a:list)
-  if len(a:variadic)>1
+  if is_ignoreopt
     let ignorepat = self._get_optignorepat()
     call filter(list, 'v:val !~# ignorepat')
   end
   return get(list, a:pat, default)
+endfunction
+"}}}
+function! s:_solve_variadic_for_set_default(variadic, default) "{{{
+  let [num, default] = a:default
+  for val in a:variadic
+    if type(val)==s:TYPE_STR
+      let default = val
+    else
+      let num = val
+    end
+    unlet val
+  endfor
+  return [num, default]
 endfunction
 "}}}
 function! s:_matches(pat, list) "{{{
@@ -234,7 +247,7 @@ endfunction
 let s:CmdParser._get_optignorepat = s:func._get_optignorepat
 let s:CmdParser._get_arg = s:func._get_arg
 function! s:CmdParser.get(pat, ...) "{{{
-  return s:_get_arg(a:pat, a:000, self.args)
+  return self._get_arg(a:pat, a:000, self.args)
 endfunction
 "}}}
 function! s:CmdParser.matches(pat) "{{{
