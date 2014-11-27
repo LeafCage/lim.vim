@@ -122,7 +122,7 @@ function! s:Builder.build(fmtidx, records, len) "{{{
   while len > 0
     let [refined, refinedlen, sample] = self._refine_for_child(fieldidx, a:records, type)
     let child = self.build(childfmtidx, refined, refinedlen)
-    call add(ret, [sample, child])
+    call add(ret, (type==s:TYPE_LIST ? add(sample, child) : [sample, child]))
     let len -= refinedlen
   endw
   return ret
