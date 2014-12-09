@@ -2,6 +2,8 @@ if exists('s:save_cpo')| finish| endif
 let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
+let s:TYPE_LIST = type([])
+
 "Misc:
 function! s:_get_nemustrokes_pats(strokedefs, crrinput) "{{{
   let inputlen = strlen(a:crrinput)
@@ -85,28 +87,30 @@ endfunction
 
 "=============================================================================
 "Main:
-let s:TYPE_LIST = type([])
-let s:TYPE_DICT = type({})
 function! lim#ui#select(prompt, choices, ...) "{{{
-  let funcopts = a:0 ? a:1 : {}
-  if empty(a:choices)
+  let behavior = a:0 ? a:1 : {}
+  if a:choices==[]
     return []
   end
   echo a:prompt
-  let choices = type(a:choices)==s:TYPE_DICT ? sort(items(a:choices)) : a:choices
-  if get(funcopts, 'show_choices', 1)
-    call s:_show_choices(choices)
+  if !get(behavior, 'silent', 0)
+    call s:_show_choices(a:choices, get(behavior, 'sort', 0))
   end
-  let keys = map(copy(choices), 'v:val[0]')
-  let cancel_inputs = get(funcopts, 'cancel_inputs', ["\<Esc>"]) + ["\<C-c>"]
-  let inputs = s:newInputs(keys)
+  let dict = s:_get_choicesdict(a:choices)
+  let cancel_inputs = get(behavior, 'cancel_inputs', ["\<Esc>", "\<C-c>"])
+  if cancel_inputs==[]
+    call add(cancel_inputs, "\<C-c>")
+  end
+  let tmp = get(behavior, 'error_inputs', [])
+  let error_inputs = type(tmp)==s:TYPE_LIST ? tmp : tmp ? cancel_inputs : []
+  let inputs = s:newInputs(keys(dict))
   while 1
     let char = inputs.receive()
-    if index(cancel_inputs, char)!=-1
+    if index(error_inputs, char)!=-1
       redraw!
-      if has_key(funcopts, 'throw_on_canceled') && (type(funcopts.throw_on_canceled)==s:TYPE_LIST ? index(funcopts.throw_on_canceled, char)!=-1 : funcopts.throw_on_canceled)
-        throw 'select: canceled'
-      end
+      throw printf('select: inputed "%s"', s:_envimkeybind(char))
+    elseif index(cancel_inputs, char)!=-1
+      redraw!
       return []
     elseif inputs.is_specifiable(char)
       break
@@ -114,47 +118,49 @@ function! lim#ui#select(prompt, choices, ...) "{{{
   endwhile
   redraw!
   let input = inputs.get_crrinput()
-  let idx = match(choices, "^\\V['". escape(input, '\'). "', ")
-  let determ = choices[idx]
-  call s:_solve_caption(determ)
-  return determ
+  return dict[input]
 endfunctio
 "}}}
-function! s:_show_choices(choices) "{{{
+function! s:_show_choices(choices, sort_choices) "{{{
+  let mess = []
   for choice in a:choices
-    unlet! val
-    let val = choice[1]
-    let type = type(val)
-    if type==s:TYPE_LIST
-      let t = get(val, 0, '') | unlet val | let val = t | let type = type(val)
-    end
-    if type!=s:TYPE_DICT
-      echo s:_envimkeybind(choice[0]) ':' val
-      continue
-    elseif get(val, 'is_hidden', 0) || !has_key(val, 'caption')
+    if empty(get(choice, 0, '')) || get(choice, 1, '')==''
       continue
     end
-    echo s:_envimkeybind(choice[0]) ':' val.caption
+    if type(choice[0])==s:TYPE_LIST
+      if a:sort_choices
+        call sort(choice[0])
+      end
+      let input = join(map(choice[0], 's:_envimkeybind(v:val)'), ', ')
+    else
+      let input = s:_envimkeybind(choice[0])
+    end
+    call add(mess, printf('%-6s: %s', input, choice[1]))
+  endfor
+  if a:sort_choices
+    call sort(mess, 1)
+  end
+  for mes in mess
+    echo mes
   endfor
 endfunction
 "}}}
-function! s:_solve_caption(determ) "{{{
-  let val = a:determ[1]
-  let type = type(val)
-  if type==s:TYPE_LIST
-    let t = get(val, 0, '')
-    call extend(a:determ, val[1:])
-    unlet val
-    let a:determ[1] = t
-    let val = t
-    let type = type(val)
-  end
-  if type==s:TYPE_DICT
-    if has_key(val, 'throw')
-      exe 'throw' val.throw
+function! s:_get_choicesdict(choices) "{{{
+  let dict = {}
+  for cho in a:choices
+    if type(cho[0])==s:TYPE_LIST
+      for c in cho[0]
+        if !(c=='' || has_key(dict, c))
+          let dict[c] = insert(cho[1:], c)
+        end
+      endfor
+    else
+      if !(cho[0]=='' || has_key(dict, cho[0]))
+        let dict[cho[0]] = insert(cho[1:], cho[0])
+      end
     end
-    let a:determ[1] = get(val, 'caption', '')
-  end
+  endfor
+  return dict
 endfunction
 "}}}
 
