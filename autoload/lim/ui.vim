@@ -96,13 +96,13 @@ function! lim#ui#select(prompt, choices, ...) "{{{
   if !get(behavior, 'silent', 0)
     call s:_show_choices(a:choices, get(behavior, 'sort', 0))
   end
-  let dict = s:_get_choicesdict(a:choices)
   let cancel_inputs = get(behavior, 'cancel_inputs', ["\<Esc>", "\<C-c>"])
   if cancel_inputs==[]
     call add(cancel_inputs, "\<C-c>")
   end
   let tmp = get(behavior, 'error_inputs', [])
   let error_inputs = type(tmp)==s:TYPE_LIST ? tmp : tmp ? cancel_inputs : []
+  let dict = s:_get_choicesdict(a:choices)
   let inputs = s:newInputs(keys(dict))
   while 1
     let char = inputs.receive()
@@ -128,10 +128,11 @@ function! s:_show_choices(choices, sort_choices) "{{{
       continue
     end
     if type(choice[0])==s:TYPE_LIST
+      let choices = copy(choice[0])
       if a:sort_choices
-        call sort(choice[0])
+        call sort(choices)
       end
-      let input = join(map(choice[0], 's:_envimkeybind(v:val)'), ', ')
+      let input = join(map(choices, 's:_envimkeybind(v:val)'), ', ')
     else
       let input = s:_envimkeybind(choice[0])
     end
@@ -143,6 +144,7 @@ function! s:_show_choices(choices, sort_choices) "{{{
   for mes in mess
     echo mes
   endfor
+  echon ' '
 endfunction
 "}}}
 function! s:_get_choicesdict(choices) "{{{
