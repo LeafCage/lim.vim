@@ -258,19 +258,36 @@ function! s:Silo._get_refinepat_by_list(listwhere) "{{{
 endfunction
 "}}}
 function! s:Silo._get_refinepat_by_dict(dictwhere) "{{{
+  let denial = {}
   let order = {}
   for [field, val] in items(a:dictwhere)
-    let idx = index(self.fields, field)
+    let idx = field=~'^!' ? index(self.fields, field[1:]) : index(self.fields, field)
     if idx==-1
       echoerr 'silo: invalid field name >' field
     end
-    let order[idx] = type(val)!=s:TYPE_STR ? string(val) : val
+    if field=~'^!'
+      let denial[idx] = type(val)!=s:TYPE_STR ? string(val) : val
+    else
+      let order[idx] = type(val)!=s:TYPE_STR ? string(val) : val
+    end
   endfor
   let i = 0
   let pat = '^'
+  let denialpat = ''
   let save_ignorecase = &ic
   set noic
   try
+    while i < self.fieldslen
+      if has_key(denial, i)
+        let denialpat .= denialpat=='' ? '' : '\|'
+        let denialpat .= '\m'.repeat('.\{-}'.s:SEP, i). denial[i]
+      end
+      let i += 1
+    endwhile
+    if denialpat!=''
+      let pat = '^\%('. denialpat. '\)\@!\&'. pat
+    end
+    let i = 0
     while i < self.fieldslen-1
       if has_key(order, i)
         let m = match(order[i], '\\[vmMV]')
