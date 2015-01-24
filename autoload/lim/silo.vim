@@ -2,7 +2,7 @@ if exists('s:save_cpo')| finish| endif
 let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
-let g:lim#silo#rootdir = get(g:, 'lim#silo#rootdir', '~/.config/silo')
+let g:lim#silo#rootdir = get(g:, 'lim#silo#rootdir', '~/.config/silo/'. matchstr(expand('<sfile>'), 'autoload/\zs.\{-1,}\ze/'))
 let s:SEP = "\<C-k>\<Tab>"
 let s:TYPE_LIST = type([])
 let s:TYPE_DICT = type({})
@@ -200,7 +200,7 @@ function! lim#silo#newSilo(name, fields, ...) abort "{{{
   let funcopt = a:0 ? a:1 : {}
   let obj = copy(s:Silo)
   let obj.key = get(funcopt, 'key', '')
-  let obj.path = expand(g:lim#silo#rootdir).'/'.a:name
+  let obj.path = a:name=~'[/\\]' ? a:name : expand(g:lim#silo#rootdir).'/'.a:name
   let obj.dir = fnamemodify(obj.path, ':h')
   if s:_is_invalid_fields(a:fields)
     echoerr 'lim#silo#newSilo(): invalid fields > '. string(a:fields)
