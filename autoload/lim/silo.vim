@@ -90,7 +90,7 @@ endfunction
 function! s:_index_str(fields, str) "{{{
   let idx = index(a:fields, a:str)
   if idx==-1
-    throw 'lim-silo: invalid field name > '. a:str
+    throw printf('silo: invalid field name > "%s"', a:str)
   end
   return idx
 endfunction
@@ -98,7 +98,7 @@ endfunction
 function! s:_index_list(fields, list) "{{{
   let ret = map(copy(a:list), 'index(a:fields, v:val)')
   if index(ret, -1)!=-1
-    throw 'lim-silo: invalid fields > '. a:list
+    throw 'silo: invalid fields > '. string(a:list)
   end
   return ret
 endfunction
@@ -134,7 +134,7 @@ function! s:Builder['_termsamples_'.s:TYPE_STR](records, fieldidx) "{{{
   try
     let ret = lim#misc#uniq(ret)
   catch /E117/
-    echoerr 'silo-select_grouped: select_grouped() depends misc-module but it is not found.'
+    echoerr 'silo.select_grouped(): select_grouped() depends misc-module but it is not found.'
   endtry
   return ret
 endfunction
@@ -196,14 +196,14 @@ endfunction
 "=============================================================================
 "Public:
 let s:Silo = {}
-function! lim#silo#newSilo(name, fields, ...) "{{{
+function! lim#silo#newSilo(name, fields, ...) abort "{{{
   let funcopt = a:0 ? a:1 : {}
   let obj = copy(s:Silo)
   let obj.key = get(funcopt, 'key', '')
   let obj.path = expand(g:lim#silo#rootdir).'/'.a:name
   let obj.dir = fnamemodify(obj.path, ':h')
   if s:_is_invalid_fields(a:fields)
-    throw 'silo: invalid fields > '. string(a:fields)
+    echoerr 'lim#silo#newSilo(): invalid fields > '. string(a:fields)
   end
   let obj.fields = a:fields
   let obj.fieldslen = len(a:fields)
@@ -252,7 +252,7 @@ endfunction
 "}}}
 function! s:Silo._get_refinepat_by_list(listwhere) "{{{
   if len(a:listwhere)!=self.fieldslen
-    throw 'select: invalid condition > '. string(a:listwhere)
+    throw 'silo: invalid condition > '. string(a:listwhere)
   end
   return s:_innerstrify(a:listwhere)
 endfunction
@@ -289,7 +289,7 @@ endfunction
 function! s:Silo._get_fieldidxs(fmt) "{{{
   let fieldidxs = map(copy(a:fmt), 'index(self.fields, v:val)')
   if index(fieldidxs, -1)!=-1
-    throw 'silo: invalid format > '. string(a:fmt)
+    throw printf('silo: invalid format > "%s"', string(a:fmt))
   end
   return fieldidxs
 endfunction
@@ -321,7 +321,11 @@ endfunction
 function! s:Silo.has(where) "{{{
   let type = type(a:where)
   if type==s:TYPE_LIST
-    return index(self.records, self._get_refinepat_by_list(a:where))!=-1
+    try
+      return index(self.records, self._get_refinepat_by_list(a:where))!=-1
+    catch /silo: invalid condition/
+      echoerr substitute(v:exception, 'silo', 'silo.has()', '')
+    endtry
   elseif type==s:TYPE_DICT
     return match(self.records, self._get_refinepat_by_dict(a:where))!=-1
   end
@@ -330,14 +334,18 @@ endfunction
 "}}}
 function! s:Silo.select(where, ...) "{{{
   let fmt = a:0 ? a:1 : []
-  let refineds = self._get_refineds(a:where)
-  let type = type(fmt)
-  if type==s:TYPE_LIST
-    return self._fmt_by_list(refineds, fmt)
-  elseif type==s:TYPE_STR
-    return self._fmt_by_str(refineds, fmt)
-  end
-  throw 'silo: invalid format > '. stirng(fmt)
+  try
+    let refineds = self._get_refineds(a:where)
+    let type = type(fmt)
+    if type==s:TYPE_LIST
+      return self._fmt_by_list(refineds, fmt)
+    elseif type==s:TYPE_STR
+      return self._fmt_by_str(refineds, fmt)
+    end
+  catch /silo: invalid \%(condition\|format\)/
+    echoerr substitute(v:exception, 'silo', 'silo.select', '')
+  endtry
+  throw 'silo.select(): invalid format > '. stirng(fmt)
 endfunction
 "}}}
 function! s:Silo.select_distinct(where, ...) "{{{
@@ -346,19 +354,23 @@ function! s:Silo.select_distinct(where, ...) "{{{
     let ret = lim#misc#uniq(records)
     return ret
   catch /E117:/
-    echoerr 'silo-select_distinct: select_distinct() depends misc-module but it is not found.'
+    echoerr 'silo.select_distinct: select_distinct() depends misc-module but it is not found.'
     return records
   endtry
 endfunction
 "}}}
 function! s:Silo.select_grouped(where, ...) "{{{
   let builder = call('s:newBuilder', a:000)
-  let refineds = self._get_refineds(a:where)
-  let len = len(refineds)
-  if len==0
-    return []
-  end
-  call builder.activate(refineds, self.fields, self.fieldslen)
+  try
+    let refineds = self._get_refineds(a:where)
+    let len = len(refineds)
+    if len==0
+      return []
+    end
+    call builder.activate(refineds, self.fields, self.fieldslen)
+  catch /silo: invalid \%(field\|condition\)/
+    echoerr substitute(v:exception, 'silo', 'silo.select_glouped()', '')
+  endtry
   let idx = 0
   if builder.is_overidx(idx)
     return []
@@ -387,7 +399,11 @@ function! s:Silo.get(where, ...) "{{{
   if empty(a:where)
     let idx = self.records==[] ? -1 : 0
   elseif type==s:TYPE_LIST
-    let idx = index(self.records, self._get_refinepat_by_list(a:where))
+    try
+      let idx = index(self.records, self._get_refinepat_by_list(a:where))
+    catch /silo: invalid condition/
+      echoerr substitute(v:exception, 'silo', 'silo.get()', '')
+    endtry
   elseif type==s:TYPE_DICT
     let idx = match(self.records, self._get_refinepat_by_dict(a:where))
   else
@@ -397,37 +413,18 @@ function! s:Silo.get(where, ...) "{{{
     if fmt==[]
       return idx==-1 ? [] : s:_listify(self.records[idx])
     end
-    let fieldidxs = self._get_fieldidxs(fmt)
+    try
+      let fieldidxs = self._get_fieldidxs(fmt)
+    catch /silo: invalid format/
+      echoerr substitute(v:exception, 'silo', 'silo.get()', '')
+    endtry
     return idx==-1 ? [] : s:_fmtmap_by_list(self.records[idx], fieldidxs)
   end
   let fieldidx = index(self.fields, fmt)
   if fieldidx==-1
-    throw 'lim-silo: invalid format > '. fmt
+    throw 'silo.get(): invalid format > '. fmt
   end
   return idx==-1 ? '' : s:_listify(self.records[idx])[fieldidx]
-endfunction
-"}}}
-function! s:Silo.exclude(where, ...) "{{{
-  let fmt = a:0 ? a:1 : []
-  let type = type(a:where)
-  if empty(a:where)
-    let refineds = copy(self.records)
-  elseif type==s:TYPE_LIST
-    let pat = self._get_refinepat_by_list(a:where)
-    let refineds = filter(copy(self.records), 'v:val !=# pat')
-  elseif type==s:TYPE_DICT
-    let pat = self._get_refinepat_by_dict(a:where)
-    let refineds = filter(copy(self.records), 'v:val !~# pat')
-  else
-    let refineds = filter(copy(self.records), 'v:val !~# a:where')
-  end
-  let type = type(fmt)
-  if type==s:TYPE_LIST
-    return self._fmt_by_list(refineds, fmt)
-  elseif type==s:TYPE_STR
-    return self._fmt_by_str(refineds, fmt)
-  end
-  throw 'silo: invalid format > '. stirng(fmt)
 endfunction
 "}}}
 function! s:Silo.nextkey(...) "{{{
@@ -477,7 +474,11 @@ function! s:Silo.insert(rec) "{{{
 endfunction
 "}}}
 function! s:Silo.update(where, rec) "{{{
-  let targidxs = empty(a:where) ? range(self.fieldslen) : self._get_update_targidxs(a:where)
+  try
+    let targidxs = empty(a:where) ? range(self.fieldslen) : self._get_update_targidxs(a:where)
+  catch /silo: invalid condition/
+    echoerr substitute(v:exception, 'silo', 'silo.update', '')
+  endtry
   let targlen = len(targidxs)
   if !targlen
     return -1
@@ -488,12 +489,12 @@ function! s:Silo.update(where, rec) "{{{
   elseif rectype==s:TYPE_DICT
     try
       call self._update_byrecdict(a:rec, targidxs)
-    catch /invalid/
-      echoerr v:exception
-      return 2
-    catch /duplicated/
-      echoerr v:exception
+    catch /silo: record is duplicated/
+      echoerr substitute(v:exception, 'silo', 'silo.update', '')
       return 1
+    catch /silo: invalid field/
+      echoerr substitute(v:exception, 'silo', 'silo.update', '')
+      return 2
     endtry
   end
 endfunction
@@ -503,7 +504,11 @@ function! s:Silo.delete(where) "{{{
   if empty(a:where)
     let self.records = []
   elseif wheretype==s:TYPE_LIST
-    let pat = self._get_refinepat_by_list(a:where)
+    try
+      let pat = self._get_refinepat_by_list(a:where)
+    catch /silo: invalid condition/
+      echoerr substitute(v:exception, 'silo', 'silo.delete()', '')
+    endtry
     call filter(self.records, 'v:val !=# pat')
   elseif wheretype==s:TYPE_DICT
     let pat = self._get_refinepat_by_dict(a:where)
@@ -525,11 +530,15 @@ function! s:Silo.sort(...) "{{{
   return self
 endfunction
 "}}}
-function! s:Silo.rearrange(destfields) "{{{
+function! s:Silo.rearrange(destfields) abort "{{{
   if len(a:destfields) != self.fieldslen
-    throw 'silo: invalid order > '. string(a:destfields)
+    echoerr 'silo.rearrenge: invalid order > '. string(a:destfields)
   end
-  let fieldidxs = self._get_fieldidxs(a:destfields)
+  try
+    let fieldidxs = self._get_fieldidxs(a:destfields)
+  catch 'silo: invalid format'
+    echoerr substitute(v:exception, 'silo', 'silo.rearrange()', '')
+  endtry
   call map(self.records, 's:_inmap_rearrange(v:val, fieldidxs)')
   let self.fields = a:destfields
   let self.chgdtick += 1
@@ -588,7 +597,7 @@ function! s:Silo._update_byrecdict(recdict, targidxs) "{{{
   for record in records
     let str = ':'. record
     if has_key(seens, str)
-      throw 'silo-update: record is duplicated > '. record
+      throw 'silo: record is duplicated > '. record
     end
     let seens[str] = 1
   endfor
@@ -604,18 +613,9 @@ function! s:Silo._fieldkeydict_to_idxkeydict(destdict) "{{{
     let ret[idx] = dest. (idx==lastidx ? '' : s:SEP)
   endfor
   if has_key(ret, '-1')
-    throw 'silo-update: invalid field > '. ret['-1']
+    throw 'silo: invalid field > '. ret['-1']
   end
   return ret
-endfunction
-"}}}
-
-
-
-function! lim#silo#drop_silo(name) "{{{
-endfunction
-"}}}
-function! lim#silo#rename_silo(name, to) "{{{
 endfunction
 "}}}
 
