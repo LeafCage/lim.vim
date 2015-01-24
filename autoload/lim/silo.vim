@@ -479,13 +479,13 @@ function! s:Silo.commit() "{{{
   call writefile([s:_innerstrify(self.fields)] + self.records, self.path)
 endfunction
 "}}}
-function! s:Silo.insert(rec) "{{{
+function! s:Silo.insert(rec, ...) "{{{
   if type(get(a:rec, 0, []))!=s:TYPE_LIST
-    return self._insert(a:rec)
+    return self._insert(a:rec, a:000)
   end
   let ret = 0
   for rec in a:rec
-    let ret = self._insert(rec) || ret
+    let ret = self._insert(rec, a:000) || ret
   endfor
   return ret
 endfunction
@@ -562,7 +562,7 @@ function! s:Silo.rearrange(destfields) abort "{{{
   return self
 endfunction
 "}}}
-function! s:Silo._insert(rec) "{{{
+function! s:Silo._insert(rec, variadic) "{{{
   if self.has(a:rec)
     return 1
   end
@@ -570,7 +570,11 @@ function! s:Silo._insert(rec) "{{{
     echoh ErrorMsg | echom 'silo-insert : invalid insert >' a:rec | echoh NONE
     return 2
   end
-  call add(self.records, s:_innerstrify(a:rec))
+  if a:variadic==[]
+    call add(self.records, s:_innerstrify(a:rec))
+  else
+    call insert(self.records, s:_innerstrify(a:rec), a:variadic[0])
+  end
   let self.chgdtick += 1
 endfunction
 "}}}
