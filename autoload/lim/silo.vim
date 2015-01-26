@@ -215,6 +215,7 @@ function! lim#silo#newSilo(name, fields, ...) abort "{{{
     end
   catch /E684:/
   endtry
+  let obj.save_records = copy(obj.records)
   let obj.chgdtick = 0
   return obj
 endfunction
@@ -501,14 +502,19 @@ function! s:Silo.set_nextkey(...) "{{{
   let self._save_nextkeys[field] = val-1
 endfunction
 "}}}
-function! s:Silo.commit() "{{{
+function! s:Silo.commit(...) "{{{
   if !self.is_changed()
     return 1
   end
   if !isdirectory(self.dir)
     call mkdir(self.dir, 'p')
   end
-  call writefile([s:_innerstrify(self.fields)] + self.records, self.path)
+  let fields = [s:_innerstrify(self.fields)]
+  call writefile(fields + self.records, self.path)
+  if a:0
+    let rollbackpath = a:1=~'[/\\]' ? a:1 : expand(g:lim#silo#rootdir). '/backup/'. a:1
+    call writefile(fields + self.save_records, rollbackpath)
+  end
 endfunction
 "}}}
 function! s:Silo.insert(rec, ...) "{{{
