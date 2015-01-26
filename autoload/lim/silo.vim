@@ -349,27 +349,74 @@ function! s:Silo.has(where) "{{{
   return match(self.records, a:where)!=-1
 endfunction
 "}}}
+function! s:Silo._select(is_negative, where, fmt) "{{{
+  let refineds = self._get_refineds(a:is_negative, a:where)
+  let type = type(a:fmt)
+  if type==s:TYPE_LIST
+    return self._fmt_by_list(refineds, a:fmt)
+  elseif type==s:TYPE_STR
+    return self._fmt_by_str(refineds, a:fmt)
+  end
+  throw 'silo: invalid format > '. stirng(fmt)
+endfunction
+"}}}
+function! s:Silo._get_refineds(is_negative, where) "{{{
+  let sign = a:is_negative ? '!' : '='
+  let type = type(a:where)
+  if empty(a:where)
+    return copy(self.records)
+  elseif type==s:TYPE_LIST
+    let pat = self._get_refinepat_by_list(a:where)
+    return filter(copy(self.records), printf('v:val %s=# pat', sign))
+  elseif type==s:TYPE_DICT
+    let pat = self._get_refinepat_by_dict(a:where)
+    return filter(copy(self.records), printf('v:val %s~# pat', sign))
+  else
+    return filter(copy(self.records), printf('v:val %s~# a:where', sign))
+  end
+endfunction
+"}}}
 function! s:Silo.select(where, ...) "{{{
   let fmt = a:0 ? a:1 : []
   try
-    let refineds = self._get_refineds(a:where)
-    let type = type(fmt)
-    if type==s:TYPE_LIST
-      return self._fmt_by_list(refineds, fmt)
-    elseif type==s:TYPE_STR
-      return self._fmt_by_str(refineds, fmt)
-    end
+    return self._select(0, a:where, fmt)
   catch /silo: invalid \%(condition\|format\)/
     echoerr substitute(v:exception, 'silo', 'silo.select', '')
   endtry
-  throw 'silo.select(): invalid format > '. stirng(fmt)
+endfunction
+"}}}
+function! s:Silo.nselect(where, ...) "{{{
+  let fmt = a:0 ? a:1 : []
+  try
+    return self._select(1, a:where, fmt)
+  catch /silo: invalid \%(condition\|format\)/
+    echoerr substitute(v:exception, 'silo', 'silo.nselect', '')
+  endtry
+  throw 'silo.nselect(): invalid format > '. stirng(fmt)
 endfunction
 "}}}
 function! s:Silo.select_distinct(where, ...) "{{{
-  let records = call(self.select, [a:where] + a:000, self)
+  let fmt = a:0 ? a:1 : []
   try
+    let records = self._select(0, a:where, fmt)
     let ret = lim#misc#uniq(records)
     return ret
+  catch /silo: invalid \%(condition\|format\)/
+    echoerr substitute(v:exception, 'silo', 'silo.select_distinct', '')
+  catch /E117:/
+    echoerr 'silo.select_distinct: select_distinct() depends misc-module but it is not found.'
+    return records
+  endtry
+endfunction
+"}}}
+function! s:Silo.nselect_distinct(where, ...) "{{{
+  let fmt = a:0 ? a:1 : []
+  try
+    let records = self._select(1, a:where, fmt)
+    let ret = lim#misc#uniq(records)
+    return ret
+  catch /silo: invalid \%(condition\|format\)/
+    echoerr substitute(v:exception, 'silo', 'silo.select_distinct', '')
   catch /E117:/
     echoerr 'silo.select_distinct: select_distinct() depends misc-module but it is not found.'
     return records
@@ -379,7 +426,7 @@ endfunction
 function! s:Silo.select_grouped(where, ...) "{{{
   let builder = call('s:newBuilder', a:000)
   try
-    let refineds = self._get_refineds(a:where)
+    let refineds = self._get_refineds(0, a:where)
     let len = len(refineds)
     if len==0
       return []
@@ -393,21 +440,6 @@ function! s:Silo.select_grouped(where, ...) "{{{
     return []
   end
   return builder.build(idx, refineds, len)
-endfunction
-"}}}
-function! s:Silo._get_refineds(where) "{{{
-  let type = type(a:where)
-  if empty(a:where)
-    return copy(self.records)
-  elseif type==s:TYPE_LIST
-    let pat = self._get_refinepat_by_list(a:where)
-    return filter(copy(self.records), 'v:val ==# pat')
-  elseif type==s:TYPE_DICT
-    let pat = self._get_refinepat_by_dict(a:where)
-    return filter(copy(self.records), 'v:val =~# pat')
-  else
-    return filter(copy(self.records), 'v:val =~# a:where')
-  end
 endfunction
 "}}}
 function! s:Silo.get(where, ...) "{{{
@@ -516,25 +548,34 @@ function! s:Silo.update(where, rec) "{{{
   end
 endfunction
 "}}}
-function! s:Silo.delete(where) "{{{
+function! s:Silo._delete(is_negative, where) "{{{
+  let sign = a:is_negative ? '=' : '!'
   let wheretype = type(a:where)
   if empty(a:where)
-    let self.records = []
+    let self.records = a:is_negative ? self.records : []
   elseif wheretype==s:TYPE_LIST
     try
       let pat = self._get_refinepat_by_list(a:where)
     catch /silo: invalid condition/
       echoerr substitute(v:exception, 'silo', 'silo.delete()', '')
     endtry
-    call filter(self.records, 'v:val !=# pat')
+    call filter(self.records, printf('v:val %s=# pat', sign))
   elseif wheretype==s:TYPE_DICT
     let pat = self._get_refinepat_by_dict(a:where)
-    call filter(self.records, 'v:val !~# pat')
+    call filter(self.records, printf('v:val %s~# pat', sign))
   else
-    call filter(self.records, 'v:val !~# a:where')
+    call filter(self.records, printf('v:val %s~# a:where', sign))
   end
   let self.chgdtick += 1
   return self
+endfunction
+"}}}
+function! s:Silo.delete(where) "{{{
+  return self._delete(0, a:where)
+endfunction
+"}}}
+function! s:Silo.ndelete(where) "{{{
+  return self._delete(1, a:where)
 endfunction
 "}}}
 function! s:Silo.sort(...) "{{{
