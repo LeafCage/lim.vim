@@ -17,7 +17,7 @@ function! s:func._get_arg(pat, variadic, list) "{{{
   if type==s:TYPE_STR
     let default = get(a:variadic, 0, '')
     let idx = match(a:list, a:pat)
-    return idx==-1 ? default : a:list[idx]
+    return idx==-1 ? default : matchstr(a:list[idx], a:pat)
   elseif type==s:TYPE_LIST
     let [idx, default] = s:_solve_variadic_for_set_default(a:variadic, [0, ''])
     return get(filter(copy(a:list), 'index(a:pat, v:val)!=-1'), idx, default)
