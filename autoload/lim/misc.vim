@@ -33,15 +33,15 @@ function! s:_get_actual_pluginname(rootpath) "{{{
 endfunction
 "}}}
 
-let s:Uniqifier = {}
-function! s:newUniqifier(list) "{{{
-  let obj = copy(s:Uniqifier)
+let s:Uniqfier = {}
+function! s:newUniqfier(list) "{{{
+  let obj = copy(s:Uniqfier)
   let obj.list = a:list
   let obj.seens = {}
   return obj
 endfunction
 "}}}
-function! s:Uniqifier._is_firstseen(str) "{{{
+function! s:Uniqfier._is_firstseen(str) "{{{
   let str = string(a:str)
   if has_key(self.seens, str)
     return 0
@@ -50,7 +50,7 @@ function! s:Uniqifier._is_firstseen(str) "{{{
   return 1
 endfunction
 "}}}
-function! s:Uniqifier.mill() "{{{
+function! s:Uniqfier.mill() "{{{
   return filter(self.list, 'self._is_firstseen(v:val)')
 endfunction
 "}}}
@@ -137,7 +137,7 @@ endfunction
 "======================================
 "Data:
 function! lim#misc#uniq(list) "{{{
-  return s:newUniqifier(a:list).mill()
+  return s:newUniqfier(a:list).mill()
 endfunction
 "}}}
 
