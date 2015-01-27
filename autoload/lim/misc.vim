@@ -70,10 +70,11 @@ endfunction
 "}}}
 
 function! lim#misc#get_sid(...) "{{{
-  let path = !a:0 ? expand('%:p') : fnamemodify(expand(a:1), ':p:gs?\\?/?')
+  let path = !a:0 ? expand('%:p') : fnamemodify(expand(a:1), ':p')
   let snames = lim#misc#get_cmdresults('scriptnames')
   call map(snames, 'substitute(v:val, ''\s*\d*\s*:\s*\(.*\)'', ''\=expand(submatch(1))'', "")')
-  let sid = index(snames, path)+1
+  let path = get(snames, 0, '')=~'\\' ? substitute(path, '/', '\\', 'g') : substitute(path, '\\', '/', 'g')
+  let sid = index(snames, path, 0, 1)+1
   return sid
 endfunction
 "}}}
