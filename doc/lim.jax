@@ -1,0 +1,179 @@
+*lim.txt*	Vimのライブラリ。oreo.vimで組み込む前提だが単体でも利用可能。
+
+Author  : LeafCage <leafcage+vim @ gmail.com>
+License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
+	Japanese original text: <http://www.kmonos.net/nysl/>
+
+==============================================================================
+目次						*lim-contents*
+
+概要				|lim-introduction|
+使い方				|lim-usage|
+モジュール			|lim-modules|
+  cmddef			  |lim-modules-cmddef|
+  ui				  |lim-modules-ui|
+  silo				  |lim-modules-silo|
+  str2vimkeybind		  |lim-modules-str2vimkeybind|
+  misc				  |lim-modules-misc|
+
+
+==============================================================================
+概要						*lim-introduction*
+
+*lim* は Vim plugin に組み込んで使うためのモジュールを提供します。
+プラグイン|oreo.vim|を利用して組み込んで使用します。
+
+最新版:
+https://github.com/LeafCage/lim.vim
+
+oreo.vim:
+https://github.com/LeafCage/oreo.vim
+
+==============================================================================
+使い方						*lim-usage*
+
+|oreo.vim|の変数|g:oreo#libs|に|lim.vim|を登録して下さい。
+例: >
+	let g:oreo#libs.lim = '~/.vim/bundle/lim.vim'
+
+そうしたら、組み込みたいプラグインのバッファを開き、|:OreoAttract|コマンドを実
+行して下さい。 >
+	:OreoAttract lim lim/misc.vim
+
+
+==============================================================================
+モジュール					*lim-modules*
+
+長くなる場合には詳細を専用のドキュメントにまとめているので、そちらを参照された
+し。
+
+------------------------------------------------------------------------------
+lim-cmddef					*lim-modules-cmddef*
+ユーザ定義コマンド|user-commands|作成時に有用なモジュール。
+詳細は|lim-cmddef|参照。
+
+
+lim#cmddef#newCmdcmpl()
+	コマンド補完関数作成を補助するオブジェクトCmdcmplを返す。
+
+lim#cmddef#newCmdParser()
+	コマンド実行時に渡された引数を解釈するパーサ CmdParser を返す。
+
+
+------------------------------------------------------------------------------
+lim-modules-ui					*lim-modules-ui*
+キー入力型インターフェイスを提供する。詳細は|lim-ui|参照。
+
+
+lim#ui#select()
+	任意の文字列を使って複数の選択肢の中から1つを選ばせるインターフェイス
+	である。|inputlist()|と同じような使い方が出来る。
+
+lim#ui#keybind()
+
+
+------------------------------------------------------------------------------
+lim-modules-silo				*lim-modules-silo*
+テーブル1つの簡易なデータベースのようなものを提供する。詳細は|lim-silo|参照。
+
+
+lim#silo#newSilo()
+	永続化されたファイルを読み込み、Siloオブジェクトを返す。
+	このオブジェクトを操作することでデータを更新したり書き込んだり出来る。
+
+
+------------------------------------------------------------------------------
+lim-modules-str2vimkeybind			*lim-modules-str2vimkeybind*
+
+				*lim#str2vimkeybind#str2vimkeybind()*
+lim#str2vimkeybind#str2vimkeybind({stroke})
+	文字列{stroke}の内、"<CR>" や "<C-a>" など、Vim のヘルプで使われるキー
+	バインド表記で表すことができるものがあるのならそれに置き換えて、その文
+	字列を返す。
+
+
+------------------------------------------------------------------------------
+lim-modules-misc				*lim-modules-misc*
+
+汎用のモジュールを提供する。
+
+--------------------------------------
+Vim:
+
+lim#misc#get_cmdresults({cmd})			*lim#misc#get_cmdresults()*
+	EXコマンド|ex-cmd-index|のうち、結果をコマンドライン域に表示するコマン
+	ドを文字列で{cmd}に指定する。結果が文字列のリストとなって返却される。
+
+
+lim#misc#get_sid([{path}])			*lim#misc#get_sid()*
+	Vim scriptのパス{path}を指定する。このパスはフルパスでも相対パスでもよ
+	い。それの script id を返す。{path}を省略した場合、現在開いているファ
+	イルで検索される。マッチがなければ 0 を返す。
+
+
+lim#misc#match_sids({pat})			*lim#misc#match_sids()*
+	パターン{pat}にマッチする script id をリストで返す。
+
+
+lim#misc#get_scriptpath({sid})			*lim#misc#get_scriptname()*
+	script id {sid} のスクリプト名フルパスで取得する。存在しないときには空
+	文字列を返す。
+
+
+lim#misc#get_scriptinfos([{pat}])		*lim#misc#get_scriptinfos()*
+	パターン{pat}にマッチするscriptsの id と script名 をリストにして返す。
+	パターンが省略された場合現在バッファの情報を取得する。
+	パターンに数値を指定すると script id で検索する。
+
+
+lim#misc#get_sfuncs([{path}])			*lim#misc#get_sfunc()*
+	スクリプトファイル{path}のスクリプトローカル関数を収めた辞書を返す。
+	{path}が省略された時には、現在編集中のバッファのパスが使われる。 >
+		function! s:example()
+		  return 'hello!'
+		endfunction
+
+		let s:s = lim#misc#get_sfuncs(expand('<sfile>'))
+		echo s:s.example()
+			" #=> 'hello!'
+<
+
+
+--------------------------------------
+Data:
+
+lim#misc#uniq({list})				*lim#misc#uniq()*
+	{list}内の重複した要素を除去し、結果を返す。{list}を直接変更するので、
+	必要なら事前に|copy()|をしておくこと。
+
+
+--------------------------------------
+System:
+
+lim#misc#path_encode({path})			*lim#misc#path_encode()*
+	パス名{path}をファイル名として使える名前に変更する。
+	= を == に、: を =+ に、/ や \ を =- に変換した結果を返す。
+
+
+lim#misc#path_decode({fname})			*lim#misc#path_decode()*
+	|lim#misc#path_encode()|で変換したパス名を元に戻した結果を返す。
+
+
+		*lim#misc#get_plugins_root_and_name_and_actualname()*
+lim#misc#get_plugins_root_and_name_and_actualname({path})
+	Vim plugin の 1ファイル{path}が所属するプラグインの名前とルートディレ
+	クトリを推測して返す。ルートディレクトリはその直下には "after"
+	"autoload" "plugin" "syntax" "ftplugin" "ftdetect" のうちのいずれかが
+	あるだろうという乱暴な理論に基づいて{path}を遡りながら推測される。
+	プラグイン名は、見つけたルートディレクトリの名前がすなわちプラグイン名
+	だろうという乱暴な理論に基づき推測される。
+	ただし、実際にはルートディレクトリ名がプラグイン名を表していない場合も
+	あるので plugin, syntax, autoload ディレクトリにある実際の Vim script
+	ファイル名を見てそれもプラグイン名の候補 actualname として返す。
+	[rootpath, pluginname, actualname] というリストを返す。
+
+
+
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:fen:

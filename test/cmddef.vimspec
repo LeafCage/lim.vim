@@ -1,0 +1,84 @@
+scriptencoding utf-8
+Describe cmddef:
+  Context Cmdcmpl
+  End
+
+  Context CmdParser
+    It .get()
+      let parser = lim#cmddef#newCmdParser(split('--opt1 --opt2 foo bar'))
+      Assert Equals(parser.get(0), '--opt1')
+      Assert Equals(parser.get(0, 1), 'foo')
+      Assert Equals(parser.get(1, 1), 'bar')
+      Assert Equals(parser.get(3), 'bar')
+      Assert Equals(parser.get(8, 'appou'), 'appou')
+
+      Assert Equals(parser.get('^-'), '--opt1')
+      Assert Equals(parser.get('^[^-]'), 'foo')
+      Assert Equals(parser.get('manuke'), '')
+      Assert Equals(parser.get('manuke', 'ringo'), 'ringo')
+
+      Assert Equals(parser.get(['raa', 'moo']), '')
+      Assert Equals(parser.get(['raa', 'moo'], 'koo'), 'koo')
+      Assert Equals(parser.get(['raa', 'moo', 'foo', 'bar']), 'foo')
+      Assert Equals(parser.get(['raa', 'moo', 'foo', 'bar'], 1), 'bar')
+    End
+
+    It .matches()
+      let parser = lim#cmddef#newCmdParser(split('--male --female foo bar baz'))
+      Assert Equals(parser.matches('^-'), ['--male', '--female'])
+      Assert Equals(parser.matches('b'), ['bar', 'baz'])
+      Assert Equals(parser.matches(['foo', 'b', 'baz']), ['foo', 'baz'])
+    End
+
+    It .divide()
+      let parser = lim#cmddef#newCmdParser(split('らせん階段 カブト虫 廃墟の町 イチジクのタルト カブト虫 ドロローサへの道 カブト虫 特異点 ジョット 天使 紫陽花 カブト虫 特異点 秘密の皇帝'))
+      Assert Equals(parser.divide('カブト虫'), [['らせん階段'], ['廃墟の町', 'イチジクのタルト'], ['ドロローサへの道'], ['特異点', 'ジョット', '天使', '紫陽花'], ['特異点', '秘密の皇帝']])
+      Assert Equals(parser.divide('カブト虫', 'start'), [['らせん階段'], ['カブト虫', '廃墟の町', 'イチジクのタルト'], ['カブト虫', 'ドロローサへの道'], ['カブト虫', '特異点', 'ジョット', '天使', '紫陽花'], ['カブト虫', '特異点', '秘密の皇帝']])
+      Assert Equals(parser.divide('カブト虫', 'stop'), [['らせん階段', 'カブト虫'], ['廃墟の町', 'イチジクのタルト', 'カブト虫'], ['ドロローサへの道', 'カブト虫'], ['特異点', 'ジョット', '天使', '紫陽花', 'カブト虫'], ['特異点', '秘密の皇帝']])
+    End
+
+    It .filter()
+    End
+  End
+
+  Context CmdParser.parse_options()
+    Before
+      let self.optdict = {'kou': ['--kou', '-k'], 'otsu': ['--otsu', '-o'], 'hei': [['--hei', '-h'], ['--no-hei', '-H'], 1], 'tei': 0, 'name': [['--name', '-n'], '']}
+    End
+
+    It is not matched.
+      let args = split('foo bar buz')
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict), {'kou': 0, 'otsu': 0, 'hei': 1, 'tei': 0, 'name': ''})
+      Assert Equals(args, ['foo', 'bar', 'buz'])
+    End
+    It match long opts.
+      let args = ['--otsu', '--name=Ted']
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict), {'kou': 0, 'otsu': 1, 'hei': 1, 'tei': 0, 'name': 'Ted'})
+      Assert Equals(args, [])
+    End
+    It match invert opts
+      let args = ['--no-hei']
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict), {'kou': 0, 'otsu': 0, 'hei': 0, 'tei': 0, 'name': ''})
+      Assert Equals(args, [])
+    End
+    It other
+      let args = split('--name=Ted --fujiko -o --nanjara foo')
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict), {'kou': 0, 'otsu': 1, 'hei': 1, 'tei': 0, 'name': 'Ted'})
+      Assert Equals(args, ['--fujiko', '--nanjara', 'foo'])
+
+      let args = split('--kou --name=Ted --tei --otsu --nanjara foo')
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict, 0), {'kou': 1, 'otsu': 0, 'hei': 1, 'tei': 0, 'name': ''})
+      Assert Equals(args, ['--name=Ted', '--tei', '--otsu', '--nanjara', 'foo'])
+
+      let args = split('--kou --name=Ted --tei --otsu --nanjara foo')
+      let parser = lim#cmddef#newCmdParser(args)
+      Assert Equals(parser.parse_options(self.optdict, [1,2]), {'kou': 0, 'otsu': 0, 'hei': 1, 'tei': 1, 'name': 'Ted'})
+      Assert Equals(args, ['--kou', '--otsu', '--nanjara', 'foo'])
+    End
+  End
+End
