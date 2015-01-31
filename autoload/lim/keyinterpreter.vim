@@ -87,7 +87,7 @@ endfunction
 
 "======================================
 "Public:
-function! lim#str2vimkeybind#str2vimkeybind(stroke) "{{{
+function! lim#keyinterpreter#interpret(stroke) "{{{
   let lis = split(a:stroke, '\zs')
   let parser = s:newParser(lis)
   let i = 0

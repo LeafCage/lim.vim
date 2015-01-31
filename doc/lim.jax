@@ -13,7 +13,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
   cmddef			  |lim-modules-cmddef|
   ui				  |lim-modules-ui|
   silo				  |lim-modules-silo|
-  str2vimkeybind		  |lim-modules-str2vimkeybind|
+  keyinterpreter		  |lim-modules-keyinterpreter|
   misc				  |lim-modules-misc|
 
 
@@ -83,10 +83,10 @@ lim#silo#newSilo()
 
 
 ------------------------------------------------------------------------------
-lim-modules-str2vimkeybind			*lim-modules-str2vimkeybind*
+lim-modules-keyinterpreter			*lim-modules-keyinterpreter*
 
-				*lim#str2vimkeybind#str2vimkeybind()*
-lim#str2vimkeybind#str2vimkeybind({stroke})
+					*lim#keyinterpreter#interpret()*
+lim#keyinterpreter#interpret({stroke})
 	文字列{stroke}の内、"<CR>" や "<C-a>" など、Vim のヘルプで使われるキー
 	バインド表記で表すことができるものがあるのならそれに置き換えて、その文
 	字列を返す。
