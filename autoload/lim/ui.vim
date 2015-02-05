@@ -29,12 +29,12 @@ function! s:_get_nemustrokes_pats(strokedefs, crrinput) "{{{
   return [nextstrokes_pat, multistrokes_pat]
 endfunction
 "}}}
-function! s:_envimkeybind(str) "{{{
+function! s:_envimkeycodes(str) "{{{
   try
-    let ret = has_key(s:, 'disable_keyinterpreter') ? a:str : lim#keyinterpreter#interpret(a:str)
+    let ret = has_key(s:, 'disable_keynotation') ? a:str : lim#keynotation#encode(a:str)
     return ret
   catch /E117:/
-    let s:disable_keyinterpreter = 1
+    let s:disable_keynotation = 1
     return a:str
   endtry
 endfunction
@@ -108,7 +108,7 @@ function! lim#ui#select(prompt, choices, ...) "{{{
     let char = inputs.receive()
     if index(error_inputs, char)!=-1
       redraw!
-      throw printf('select: inputed "%s"', s:_envimkeybind(char))
+      throw printf('select: inputed "%s"', s:_envimkeycodes(char))
     elseif index(cancel_inputs, char)!=-1
       redraw!
       return []
@@ -132,9 +132,9 @@ function! s:_show_choices(choices, sort_choices) "{{{
       if a:sort_choices
         call sort(choices)
       end
-      let input = join(map(choices, 's:_envimkeybind(v:val)'), ', ')
+      let input = join(map(choices, 's:_envimkeycodes(v:val)'), ', ')
     else
-      let input = s:_envimkeybind(choice[0])
+      let input = s:_envimkeycodes(choice[0])
     end
     call add(mess, printf('%-6s: %s', input, choice[1]))
   endfor

@@ -13,7 +13,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
   cmddef			  |lim-modules-cmddef|
   ui				  |lim-modules-ui|
   silo				  |lim-modules-silo|
-  keyinterpreter		  |lim-modules-keyinterpreter|
+  keynotation			  |lim-modules-keynotation|
   misc				  |lim-modules-misc|
 
 
@@ -83,13 +83,13 @@ lim#silo#newSilo()
 
 
 ------------------------------------------------------------------------------
-lim-modules-keyinterpreter			*lim-modules-keyinterpreter*
+lim-modules-keynotation				*lim-modules-keynotation*
 
-					*lim#keyinterpreter#interpret()*
-lim#keyinterpreter#interpret({stroke})
-	文字列{stroke}の内、"<CR>" や "<C-a>" など、Vim のヘルプで使われるキー
-	バインド表記で表すことができるものがあるのならそれに置き換えて、その文
-	字列を返す。
+						*lim#keynotation#encode()*
+lim#keynotation#encode({str})
+	文字列{str}の内、<CR> や <C-a> など、Vim のヘルプで使われるキーコード
+	表記|key-notation|で表すことができるものがあるのならそれに置き換えて、
+	その文字列を返す。
 
 
 ------------------------------------------------------------------------------
