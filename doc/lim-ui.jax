@@ -24,9 +24,15 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 	silent			(数値)
 		既定値: 0
 		1 にすると選択肢を表示しない。プロンプトは表示する。
-	sort		(数値)
+	sort			(数値)
 		既定値: 0
 		1 にすると選択肢を入力基準でソートして表示する。
+	expand_keycodes		(数値)
+		既定値: 0
+		1 にすると <CR> や <C-a> といったVimの|key-notation|表記を利用
+		することができる。そうでなければ特殊文字には >
+			"\<CR>" "\<C-a>"
+<		といった表記しか利用できない。
 	cancel_inputs		(リスト)
 		既定値: ["\<Esc>", "\<C-c>"]
 		このリストが空のときには "\<C-c>" が加えられる。
@@ -88,10 +94,14 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 
 
 
-
 lim#ui#keybind({binddefs})			*lim#ui#keybind()*
+lim#ui#expand_keybind({binddefs})		*lim#ui#expand_keybind()*
 	キー入力を受け取り、それがキーバインド定義{binddefs}で定義されたキーバ
 	インドと一致したならばそれのアクション名を帰す。
+	|lim#ui#expand_keybind()|は <CR> や <C-a> といったVimの|key-notation|
+	表記を利用することができる。そうでないなら特殊文字には >
+		"\<CR>" "\<C-a>"
+<	といった表記しか利用できない。
 	辞書{binddefs}のキーには任意のアクション名、値にはキーバインド定義(文
 	字列のリスト)を渡す。
 	例 >

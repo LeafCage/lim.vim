@@ -29,6 +29,10 @@ function! s:_get_nemustrokes_pats(strokedefs, crrinput) "{{{
   return [nextstrokes_pat, multistrokes_pat]
 endfunction
 "}}}
+function! s:_expand_keycodes(str) "{{{
+  return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
+endfunction
+"}}}
 function! s:_envimkeycodes(str) "{{{
   try
     let ret = has_key(s:, 'disable_keynotation') ? a:str : lim#keynotation#encode(a:str)
@@ -102,7 +106,7 @@ function! lim#ui#select(prompt, choices, ...) "{{{
   end
   let tmp = get(behavior, 'error_inputs', [])
   let error_inputs = type(tmp)==s:TYPE_LIST ? tmp : tmp ? cancel_inputs : []
-  let dict = s:_get_choicesdict(a:choices)
+  let dict = s:_get_choicesdict(a:choices, get(behavior, 'expand_keycodes', 0))
   let inputs = s:newInputs(keys(dict))
   while 1
     let char = inputs.receive()
@@ -147,18 +151,20 @@ function! s:_show_choices(choices, sort_choices) "{{{
   echon ' '
 endfunction
 "}}}
-function! s:_get_choicesdict(choices) "{{{
+function! s:_get_choicesdict(choices, expand_keycodes) "{{{
   let dict = {}
   for cho in a:choices
     if type(cho[0])==s:TYPE_LIST
       for c in cho[0]
-        if !(c=='' || has_key(dict, c))
-          let dict[c] = insert(cho[1:], c)
+        let chr = a:expand_keycodes ? s:_expand_keycodes(c) : c
+        if !(chr=='' || has_key(dict, chr))
+          let dict[chr] = insert(cho[1:], c)
         end
       endfor
     else
-      if !(cho[0]=='' || has_key(dict, cho[0]))
-        let dict[cho[0]] = insert(cho[1:], cho[0])
+      let chr = a:expand_keycodes ? s:_expand_keycodes(cho[0]) : cho[0]
+      if !(chr=='' || has_key(dict, chr))
+        let dict[chr] = insert(cho[1:], cho[0])
       end
     end
   endfor
@@ -167,13 +173,16 @@ endfunction
 "}}}
 
 function! lim#ui#keybind(binddefs) "{{{
-  let bindacts= {}
-  for [act, binds] in items(a:binddefs)
-    for bind in binds
-      let bindacts[bind] = act
-    endfor
-  endfor
-  let inputs = s:newInputs(key(bindacts))
+  return s:keybind(a:binddefs, 0)
+endfunction
+"}}}
+function! lim#ui#expand_keybind(binddefs) "{{{
+  return s:keybind(a:binddefs, 1)
+endfunction
+"}}}
+function! s:keybind(binddefs, expand_keycodes) "{{{
+  let bindacts = a:expand_keycodes ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
+  let inputs = s:newInputs(keys(bindacts))
   while 1
     let char = inputs.receive()
     if !has_key(bindacts, "\<C-c>") && char=="\<C-c>"
@@ -183,6 +192,26 @@ function! lim#ui#keybind(binddefs) "{{{
     end
   endwhile
   return bindacts[inputs.get_crrinput()]
+endfunction
+"}}}
+function! s:_get_bindacts(binddefs) "{{{
+  let bindacts= {}
+  for [act, binds] in items(a:binddefs)
+    for bind in binds
+      let bindacts[bind] = act
+    endfor
+  endfor
+  return bindacts
+endfunction
+"}}}
+function! s:_get_bindacts_by_vimkeynotation(binddefs) "{{{
+  let bindacts= {}
+  for [act, binds] in items(a:binddefs)
+    for bind in binds
+      let bindacts[s:_expand_keycodes(bind)] = act
+    endfor
+  endfor
+  return bindacts
 endfunction
 "}}}
 
