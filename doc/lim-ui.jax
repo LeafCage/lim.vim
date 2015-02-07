@@ -20,6 +20,7 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 	戻り値はリストである。その中身は [入力, 説明, その他の要素..] となって
 	いる(後述)。 |lim#ui#select()-return-value|
 	省略可能な辞書{behavior}(辞書)で関数の挙動を変更できる。
+	{behavior}は以下のキーを持つことができる。
 	--------~
 	silent			(数値)
 		既定値: 0
@@ -29,10 +30,8 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 		1 にすると選択肢を入力基準でソートして表示する。
 	expand_keycodes		(数値)
 		既定値: 0
-		1 にすると <CR> や <C-a> といったVimの|key-notation|表記を利用
-		することができる。そうでなければ特殊文字には >
-			"\<CR>" "\<C-a>"
-<		といった表記しか利用できない。
+		非0 にすると "<CR>" や "<C-a>" といったVimの|key-notation|表記
+		を特殊文字に変換して "\<CR>" "\<C-a>" といった形にする。
 	cancel_inputs		(リスト)
 		既定値: ["\<Esc>", "\<C-c>"]
 		このリストが空のときには "\<C-c>" が加えられる。
@@ -94,16 +93,11 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 
 
 
-lim#ui#keybind({binddefs})			*lim#ui#keybind()*
-lim#ui#expand_keybind({binddefs})		*lim#ui#expand_keybind()*
+lim#ui#keybind({binddefs}, [{behavior}])	*lim#ui#keybind()*
 	キー入力を受け取り、それがキーバインド定義{binddefs}で定義されたキーバ
-	インドと一致したならばそれのアクション名を帰す。
-	|lim#ui#expand_keybind()|は <CR> や <C-a> といったVimの|key-notation|
-	表記を利用することができる。そうでないなら特殊文字には >
-		"\<CR>" "\<C-a>"
-<	といった表記しか利用できない。
-	辞書{binddefs}のキーには任意のアクション名、値にはキーバインド定義(文
-	字列のリスト)を渡す。
+	インドと一致したならばそのアクション名を返す。
+	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド(
+	文字列のリスト)を渡す。戻り値は打ち込まれたアクション名である。
 	例 >
 	let def = {'act1': ['a', 'b1'], 'act2': ['b2'], 'act3': ["\<C-x>"]}
 	echo "type 'a', 'b1', 'b2', or '<C-x>'"
@@ -116,6 +110,18 @@ lim#ui#expand_keybind({binddefs})		*lim#ui#expand_keybind()*
 	なお、脱出不能を防ぐためにデフォルトでは <C-c> で入力待ち状態を解除し
 	て空文字を返すようになっている。ただしキーバインド定義に <C-c> を含ん
 	でいるのならそちらが優先される。
+
+	省略可能な辞書{behavior}(辞書)で関数の挙動を変更できる。
+	{behavior}は以下のキーを持つことができる。
+	--------~
+	expand_keycodes		(数値)
+		既定値: 0
+		非0 にすると "<CR>" や "<C-a>" といったVimの|key-notation|表記
+		を特殊文字に変換して "\<CR>" "\<C-a>" といった形にする。
+	transit			(数値)
+		既定値: 0
+		非0 にすると入力がアクションにマッチしなかった場合、受け取りを
+		終了して、入力されたそのままの文字列を返す。
 
 
 ==============================================================================

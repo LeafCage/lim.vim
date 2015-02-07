@@ -45,23 +45,25 @@ endfunction
 "}}}
 
 let s:Inputs = {}
-function! s:newInputs(keys) "{{{
+function! s:newInputs(keys, ...) "{{{
   let obj = copy(s:Inputs)
+  let obj.is_transit = a:0 ? a:1 : 0
   let obj.crrinput = ''
+  let obj._crrchar = ''
   let obj.keys = a:keys
   return obj
 endfunction
 "}}}
 function! s:Inputs.receive() "{{{
     let [self.nextstrokes_pat, self.multistrokes_pat] = s:_get_nemustrokes_pats(self.keys, self.crrinput)
-    let char = nr2char(getchar())
-    let self.crrinput .= char
-    return char
+    let self._crrchar = nr2char(getchar())
+    let self.crrinput .= self._crrchar
+    return self._crrchar
 endfunction
 "}}}
-function! s:Inputs.is_specifiable(char) "{{{
-  if !self._has_nextdef(a:char)
-    if self._has_pastmatch()
+function! s:Inputs.is_specifiable() "{{{
+  if !self._has_nextdef()
+    if self._has_pastmatch() || self.is_transit
       return 1
     end
     let self.crrinput = ''
@@ -70,8 +72,8 @@ function! s:Inputs.is_specifiable(char) "{{{
   end
 endfunction
 "}}}
-function! s:Inputs._has_nextdef(char) "{{{
-  return a:char =~# self.nextstrokes_pat
+function! s:Inputs._has_nextdef() "{{{
+  return self._crrchar =~# self.nextstrokes_pat
 endfunction
 "}}}
 function! s:Inputs._has_pastmatch() "{{{
@@ -116,7 +118,7 @@ function! lim#ui#select(prompt, choices, ...) "{{{
     elseif index(cancel_inputs, char)!=-1
       redraw!
       return []
-    elseif inputs.is_specifiable(char)
+    elseif inputs.is_specifiable()
       break
     end
   endwhile
@@ -172,26 +174,20 @@ function! s:_get_choicesdict(choices, expand_keycodes) "{{{
 endfunction
 "}}}
 
-function! lim#ui#keybind(binddefs) "{{{
-  return s:keybind(a:binddefs, 0)
-endfunction
-"}}}
-function! lim#ui#expand_keybind(binddefs) "{{{
-  return s:keybind(a:binddefs, 1)
-endfunction
-"}}}
-function! s:keybind(binddefs, expand_keycodes) "{{{
-  let bindacts = a:expand_keycodes ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
-  let inputs = s:newInputs(keys(bindacts))
+function! lim#ui#keybind(binddefs, ...) "{{{
+  let behavior = a:0 ? a:1 : {}
+  let bindacts = get(behavior, 'expand_keycodes') ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
+  let inputs = s:newInputs(keys(bindacts), get(behavior, 'transit'))
   while 1
     let char = inputs.receive()
     if !has_key(bindacts, "\<C-c>") && char=="\<C-c>"
       return ''
-    elseif inputs.is_specifiable(char)
+    elseif inputs.is_specifiable()
       break
     end
   endwhile
-  return bindacts[inputs.get_crrinput()]
+  let input = inputs.get_crrinput()
+  return get(bindacts, input, input)
 endfunction
 "}}}
 function! s:_get_bindacts(binddefs) "{{{
