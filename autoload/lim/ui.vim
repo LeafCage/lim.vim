@@ -108,7 +108,7 @@ function! lim#ui#select(prompt, choices, ...) "{{{
   end
   let tmp = get(behavior, 'error_inputs', [])
   let error_inputs = type(tmp)==s:TYPE_LIST ? tmp : tmp ? cancel_inputs : []
-  let dict = s:_get_choicesdict(a:choices, get(behavior, 'expand_keycodes', 0))
+  let dict = s:_get_choicesdict(a:choices, get(behavior, 'expand', 0))
   let inputs = s:newInputs(keys(dict))
   while 1
     let char = inputs.receive()
@@ -176,7 +176,7 @@ endfunction
 
 function! lim#ui#keybind(binddefs, ...) "{{{
   let behavior = a:0 ? a:1 : {}
-  let bindacts = get(behavior, 'expand_keycodes') ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
+  let bindacts = get(behavior, 'expand') ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
   let inputs = s:newInputs(keys(bindacts), get(behavior, 'transit'))
   while 1
     let char = inputs.receive()
