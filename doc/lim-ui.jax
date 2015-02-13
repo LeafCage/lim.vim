@@ -96,10 +96,11 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 lim#ui#keybind({binddefs}, [{behavior}])	*lim#ui#keybind()*
 	キー入力を受け取り、それがキーバインド定義{binddefs}で定義されたキーバ
 	インドと一致したならばそのアクション名を返す。
-	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド(
-	文字列のリスト)を渡す。戻り値は打ち込まれたアクション名である。
+	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド
+	(文字列または文字列のリスト)を渡す。
+	戻り値は打ち込まれたアクション名である。
 	例 >
-	let def = {'act1': ['a', 'b1'], 'act2': ['b2'], 'act3': ["\<C-x>"]}
+	let def = {'act1': ['a', 'b1'], 'act2': 'b2', 'act3': "\<C-x>"}
 	echo "type 'a', 'b1', 'b2', or '<C-x>'"
 	let act = lim#ui#keybind(def)
 	if act!=''

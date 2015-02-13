@@ -3,37 +3,18 @@ let s:save_cpo = &cpo| set cpo&vim
 scriptencoding utf-8
 "=============================================================================
 let s:TYPE_LIST = type([])
+let s:TYPE_STR = type('')
 
 "Misc:
-function! s:_get_nemustrokes_pats(strokedefs, crrinput) "{{{
-  let inputlen = strlen(a:crrinput)
-  let seen = {}
-  let nextstrokes_str = ''
-  let multistrokes_str = ''
-  for strokedef in a:strokedefs
-    if strokedef !~# '^'.a:crrinput
-      continue
-    end
-    let c = strokedef[inputlen]
-    if c==''
-      continue
-    elseif has_key(seen, c)
-      if multistrokes_str !~# c | let multistrokes_str .= c | end
-    else
-      let nextstrokes_str .= c
-      let seen[c] = 1
-    end
-  endfor
-  let nextstrokes_pat = '['. substitute(nextstrokes_str, '[\]\^\-\\]', '\\\0', 'g'). ']'
-  let multistrokes_pat = '['. substitute(multistrokes_str, '[\]\^\-\\]', '\\\0', 'g'). ']'
-  return [nextstrokes_pat, multistrokes_pat]
-endfunction
-"}}}
 function! s:_expand_keycodes(str) "{{{
   return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
 endfunction
 "}}}
-function! s:_envimkeycodes(str) "{{{
+function! s:_noexpand(str) "{{{
+  return a:str
+endfunction
+"}}}
+function! s:_cnvvimkeycodes(str) "{{{
   try
     let ret = has_key(s:, 'disable_keynotation') ? a:str : lim#keynotation#encode(a:str)
     return ret
@@ -45,48 +26,49 @@ endfunction
 "}}}
 
 let s:Inputs = {}
+let s:Inputs.substs = {"\x80": "\\[\x80]", '\': '\\'}
 function! s:newInputs(keys, ...) "{{{
   let obj = copy(s:Inputs)
   let obj.is_transit = a:0 ? a:1 : 0
+  let obj.neutral_keys = a:keys
+  let obj.keys = copy(a:keys)
   let obj.crrinput = ''
-  let obj._crrchar = ''
-  let obj.keys = a:keys
+  let obj.justmatch = ''
   return obj
 endfunction
 "}}}
 function! s:Inputs.receive() "{{{
-    let [self.nextstrokes_pat, self.multistrokes_pat] = s:_get_nemustrokes_pats(self.keys, self.crrinput)
-    let self._crrchar = nr2char(getchar())
-    let self.crrinput .= self._crrchar
-    return self._crrchar
+  let _ = getchar()
+  let char = type(_)==s:TYPE_STR ? _ : nr2char(_)
+  let self.crrinput .= char
+  let expr = '^\V'. substitute(self.crrinput, "[\x80\\\\]", '\=self.substs[submatch(0)]', 'g')
+  call filter(self.keys, 'v:val =~# expr')
+  return char
 endfunction
 "}}}
-function! s:Inputs.is_specifiable() "{{{
-  if !self._has_nextdef()
-    if self._has_pastmatch() || self.is_transit
+function! s:Inputs.should_break() "{{{
+  if self.keys==[]
+    if self.justmatch!='' || self.is_transit
       return 1
     end
-    let self.crrinput = ''
-  elseif !self._has_nextmultidef() && index(self.keys, self.crrinput)!=-1
+    call self._reset()
+    return 0
+  end
+  let justmatchidx = index(self.keys, self.crrinput)
+  let self.justmatch = justmatchidx==-1 ? self.justmatch : self.crrinput
+  if justmatchidx!=-1 && len(self.keys)==1
     return 1
   end
 endfunction
 "}}}
-function! s:Inputs._has_nextdef() "{{{
-  return self._crrchar =~# self.nextstrokes_pat
+function! s:Inputs.get_input() "{{{
+  return self.justmatch=='' ? self.crrinput : self.justmatch
 endfunction
 "}}}
-function! s:Inputs._has_pastmatch() "{{{
-  let pastinput = self.crrinput[-2]
-  return index(self.keys, pastinput)!=-1
-endfunction
-"}}}
-function! s:Inputs._has_nextmultidef() "{{{
-  return self.crrinput =~# self.multistrokes_pat
-endfunction
-"}}}
-function! s:Inputs.get_crrinput() "{{{
-  return self.crrinput
+function! s:Inputs._reset() "{{{
+  let self.keys = copy(self.neutral_keys)
+  let self.crrinput = ''
+  let self.justmatch = ''
 endfunction
 "}}}
 
@@ -114,16 +96,16 @@ function! lim#ui#select(prompt, choices, ...) "{{{
     let char = inputs.receive()
     if index(error_inputs, char)!=-1
       redraw!
-      throw printf('select: inputed "%s"', s:_envimkeycodes(char))
+      throw printf('select: inputed "%s"', s:_cnvvimkeycodes(char))
     elseif index(cancel_inputs, char)!=-1
       redraw!
       return []
-    elseif inputs.is_specifiable()
+    elseif inputs.should_break()
       break
     end
   endwhile
   redraw!
-  let input = inputs.get_crrinput()
+  let input = inputs.get_input()
   return dict[input]
 endfunctio
 "}}}
@@ -138,9 +120,9 @@ function! s:_show_choices(choices, sort_choices) "{{{
       if a:sort_choices
         call sort(choices)
       end
-      let input = join(map(choices, 's:_envimkeycodes(v:val)'), ', ')
+      let input = join(map(choices, 's:_cnvvimkeycodes(v:val)'), ', ')
     else
-      let input = s:_envimkeycodes(choice[0])
+      let input = s:_cnvvimkeycodes(choice[0])
     end
     call add(mess, printf('%-6s: %s', input, choice[1]))
   endfor
@@ -176,35 +158,29 @@ endfunction
 
 function! lim#ui#keybind(binddefs, ...) "{{{
   let behavior = a:0 ? a:1 : {}
-  let bindacts = get(behavior, 'expand') ? s:_get_bindacts_by_vimkeynotation(a:binddefs) : s:_get_bindacts(a:binddefs)
+  let bindacts = s:_get_bindacts(a:binddefs, function(get(behavior, 'expand') ? 's:_expand_keycodes' : 's:_noexpand'))
   let inputs = s:newInputs(keys(bindacts), get(behavior, 'transit'))
   while 1
     let char = inputs.receive()
     if !has_key(bindacts, "\<C-c>") && char=="\<C-c>"
       return ''
-    elseif inputs.is_specifiable()
+    elseif inputs.should_break()
       break
     end
   endwhile
-  let input = inputs.get_crrinput()
+  let input = inputs.get_input()
   return get(bindacts, input, input)
 endfunction
 "}}}
-function! s:_get_bindacts(binddefs) "{{{
+function! s:_get_bindacts(binddefs, expandfunc) "{{{
   let bindacts= {}
   for [act, binds] in items(a:binddefs)
+    if type(binds)==s:TYPE_STR
+      let bindacts[a:expandfunc(binds)] = act
+      continue
+    end
     for bind in binds
-      let bindacts[bind] = act
-    endfor
-  endfor
-  return bindacts
-endfunction
-"}}}
-function! s:_get_bindacts_by_vimkeynotation(binddefs) "{{{
-  let bindacts= {}
-  for [act, binds] in items(a:binddefs)
-    for bind in binds
-      let bindacts[s:_expand_keycodes(bind)] = act
+      let bindacts[a:expandfunc(bind)] = act
     endfor
   endfor
   return bindacts
