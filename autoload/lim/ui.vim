@@ -16,7 +16,7 @@ endfunction
 "}}}
 function! s:_cnvvimkeycodes(str) "{{{
   try
-    let ret = has_key(s:, 'disable_keynotation') ? a:str : lim#keynotation#encode(a:str)
+    let ret = has_key(s:, 'disable_keynotation') ? a:str : lim#keynotation#decode(a:str)
     return ret
   catch /E117:/
     let s:disable_keynotation = 1

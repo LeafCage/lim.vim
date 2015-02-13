@@ -85,8 +85,8 @@ lim#silo#newSilo()
 ------------------------------------------------------------------------------
 lim-modules-keynotation				*lim-modules-keynotation*
 
-						*lim#keynotation#encode()*
-lim#keynotation#encode({str})
+						*lim#keynotation#decode()*
+lim#keynotation#decode({str})
 	文字列{str}の内、<CR> や <C-a> など、Vim のヘルプで使われるキーコード
 	表記|key-notation|で表すことができるものがあるのならそれに置き換えて、
 	その文字列を返す。

@@ -87,7 +87,7 @@ endfunction
 
 "======================================
 "Public:
-function! lim#keynotation#encode(stroke) "{{{
+function! lim#keynotation#decode(stroke) "{{{
   let lis = split(a:stroke, '\zs')
   let parser = s:newParser(lis)
   let i = 0
