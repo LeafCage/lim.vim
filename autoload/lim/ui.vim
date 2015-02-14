@@ -26,7 +26,6 @@ endfunction
 "}}}
 
 let s:Inputs = {}
-let s:Inputs.substs = {"\x80": "\\[\x80]", '\': '\\'}
 function! s:newInputs(keys, ...) "{{{
   let obj = copy(s:Inputs)
   let obj.is_transit = a:0 ? a:1 : 0
@@ -40,9 +39,12 @@ endfunction
 function! s:Inputs.receive() "{{{
   let _ = getchar()
   let char = type(_)==s:TYPE_STR ? _ : nr2char(_)
+  while getchar(1)
+    let _ = getchar()
+    let char .= type(_)==s:TYPE_STR ? _ : nr2char(_)
+  endwhile
   let self.crrinput .= char
-  let expr = '^\V'. substitute(self.crrinput, "[\x80\\\\]", '\=self.substs[submatch(0)]', 'g')
-  call filter(self.keys, 'v:val =~# expr')
+  call filter(self.keys, 'stridx(v:val, self.crrinput)==0')
   return char
 endfunction
 "}}}
