@@ -63,8 +63,8 @@ function! s:Inputs.should_break() "{{{
   end
 endfunction
 "}}}
-function! s:Inputs.get_input() "{{{
-  return self.justmatch=='' ? self.crrinput : self.justmatch
+function! s:Inputs.get_results() "{{{
+  return [self.justmatch, substitute(self.crrinput, '^'.self.justmatch, '', '')]
 endfunction
 "}}}
 function! s:Inputs._reset() "{{{
@@ -107,7 +107,7 @@ function! lim#ui#select(prompt, choices, ...) "{{{
     end
   endwhile
   redraw!
-  let input = inputs.get_input()
+  let input = inputs.get_results()[0]
   return dict[input]
 endfunctio
 "}}}
@@ -165,13 +165,13 @@ function! lim#ui#keybind(binddefs, ...) "{{{
   while 1
     let char = inputs.receive()
     if !has_key(bindacts, "\<C-c>") && char=="\<C-c>"
-      return ''
+      return {}
     elseif inputs.should_break()
       break
     end
   endwhile
-  let input = inputs.get_input()
-  return get(bindacts, input, input)
+  let [justmatch, surplus] = inputs.get_results()
+  return {'action': get(bindacts, justmatch, ''), 'surplus': surplus}
 endfunction
 "}}}
 function! s:_get_bindacts(binddefs, expandfunc) "{{{

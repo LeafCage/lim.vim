@@ -98,18 +98,23 @@ lim#ui#keybind({binddefs}, [{behavior}])	*lim#ui#keybind()*
 	インドと一致したならばそのアクション名を返す。
 	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド
 	(文字列または文字列のリスト)を渡す。
-	戻り値は打ち込まれたアクション名である。
+	戻り値は辞書である。その辞書は次のキーを持つ。
+		action		(文字列)
+			定義の中でマッチしたアクション名。マッチするものがなけ
+			れば空文字を返す。
+		surplus		(文字列)
+			action にマッチする入力の後で打たれた余剰の入力。
 	例 >
 	let def = {'act1': ['a', 'b1'], 'act2': 'b2', 'act3': "\<C-x>"}
 	echo "type 'a', 'b1', 'b2', or '<C-x>'"
-	let act = lim#ui#keybind(def)
-	if act!=''
-	  call s:{act}()
+	let inputs = lim#ui#keybind(def)
+	if inputs!={}
+	  call s:{inputs.action}()
 	endif
 <	この例では、a や b1 を入力すると s:act1() が実行され、b2 で s:act2()、
 	<C-x> で s:act3() が実行される。
 	なお、脱出不能を防ぐためにデフォルトでは <C-c> で入力待ち状態を解除し
-	て空文字を返すようになっている。ただしキーバインド定義に <C-c> を含ん
+	て空辞書を返すようになっている。ただしキーバインド定義に <C-c> を含ん
 	でいるのならそちらが優先される。
 
 	省略可能な辞書{behavior}(辞書)で関数の挙動を変更できる。
