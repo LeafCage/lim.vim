@@ -159,20 +159,21 @@ lim#misc#path_decode({fname})			*lim#misc#path_decode()*
 	|lim#misc#path_encode()|で変換したパス名を元に戻した結果を返す。
 
 
-		*lim#misc#get_plugins_root_and_name_and_actualname()*
-lim#misc#get_plugins_root_and_name_and_actualname({path})
+lim#misc#infer_plugin_pathinfo({path})	*lim#misc#infer_plugin_pathinfo()*
 	Vim plugin の 1ファイル{path}が所属するプラグインの名前とルートディレ
-	クトリを推測して返す。ルートディレクトリはその直下には "after"
-	"autoload" "plugin" "syntax" "ftplugin" "ftdetect" のうちのいずれかが
-	あるだろうという乱暴な理論に基づいて{path}を遡りながら推測される。
-	プラグイン名は、見つけたルートディレクトリの名前がすなわちプラグイン名
-	だろうという乱暴な理論に基づき推測される。
-	ただし、実際にはルートディレクトリ名がプラグイン名を表していない場合も
-	あるので plugin, syntax, autoload ディレクトリにある実際の Vim script
-	ファイル名を見てそれもプラグイン名の候補 actualname として返す。
-	[rootpath, pluginname, actualname] というリストを返す。
-
-
+	クトリを推測して返す。結果は辞書にまとめられる。失敗したときには空辞書
+	を返す。
+	辞書のキーは "root" "name" "rootname" "actualname" である。
+	root はルートディレクトリである。これは、ルートディレクトリの直下には
+	"after" "autoload" "plugin" "syntax" "ftplugin" "ftdetect" のうちのい
+	ずれかがあるだろうという乱暴な理論に基づいて{path}を遡りながら推測され
+	る。
+	rootname はルートディレクトリ名である。
+	actualname は plugin, syntax, autoload ディレクトリにあるVim scriptフ
+	ァイル名から推測したプラグイン名である。推測できないときには空文字にな
+	る。
+	name は、推測されたプラグイン名である。actualname が空文字でないときに
+	は actualname が、そうでなければ rootname が使われる。
 
 
 ==============================================================================
