@@ -1,0 +1,69 @@
+*lim-alzplugin.txt*	Vim plugin の構成要素を解析して収集する。
+
+==============================================================================
+概要						*lim-alzplugin-introduction*
+
+
+==============================================================================
+インターフェイス				*lim-alzplugin-interface*
+
+------------------------------------------------------------------------------
+関数						*lim-alzplugin-functions*
+
+						*lim#alzplugin#analyze()*
+lim#alzplugin#analyze([[{pluginroot}, [{pluginname}]], [{collect-targets}]])
+	Vimプラグインのルートディレクトリ{pluginroot}(文字列) 以下の要素を解析
+	し、結果を辞書にまとめて返す。
+	プラグイン名{pluginname}(文字列)を渡すとプラグイン名にそれが使われる。
+	{pluginroot}, {pluginname}が省略されたり空文字だった場合は、現在編集中
+	のファイルが所属するプラグインを|lim#misc#infer_plugin_pathinfo()|を用
+	いて推測する。
+	収集対象{collect-targets}(リスト) には次の文字列を要素として持つことが
+	できる。
+		"variables"		変数
+		"commands"		コマンド
+		"keymappings"		キーマッピング
+		"functions"		関数
+		"autocmds"		オートコマンド
+		"unitesources"		|unite.vim|のソース
+	返値の辞書は次の要素を持つ。
+
+	name		(文字列)
+	そのプラグインの名前(推測)
+
+	root		(文字列)
+	そのプラグインのベースとなるパス
+
+	paths		(文字列のリスト)
+	そのプラグインに含まれているファイルのパスのリスト
+
+	elements	(辞書)
+	そのプラグインに含まれている各要素
+	収集対象{collect-targets}に含めたものに応じて、次のキーを持つ。
+
+		autocmds		(リスト)
+		variables		(辞書)
+			キーに変数名、値に "vals"(その変数の既定値/複数候補が
+			あるときには複数要素を持つ) "is_dict" "order"(スクリプ
+			トの中でその変数が何番目に登場するか) というキーを持つ
+			辞書である。
+		unitesources		(リスト)
+		functions		(辞書)
+			キーは関数名、値は "param"(その関数の引数) "is_dict"(
+			辞書内包関数かどうか) "is_global"(グローバル関数かどう
+			か) というキーをもつ辞書である。
+		commands		(辞書)
+		globalkeymappings	(辞書)
+			キーにマッピング名、値に辞書を持つ。その辞書のキーは
+			"common"(共通データ) と"n" "i" "c" "o" "x" "s" (各モー
+			ドデータ)であり値はさらに辞書である。
+			そのさらなる辞書は "common" には"order" "is_local"
+			"is_defaultmapping" が、各モードデータには
+			"localdefaultmappings" "defaultmappings" "rhs" であり
+			、それらの値は文字列のリストになっている(複数の定義が
+			見つかればリストは複数の要素を持つようになる)。
+		localkeymappings	(辞書)
+
+
+==============================================================================
+vim:tw=78:ts=8:sts=2:sw=2:ft=help:norl:noet:fen:fdl=0:

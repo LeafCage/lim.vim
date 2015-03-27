@@ -498,7 +498,7 @@ endfunction
 
 "========================================================
 "Main:
-function! lim#pluginalz#analyze(...) "{{{
+function! lim#alzplugin#analyze(...) "{{{
   let _ = s:init_args(a:000)
   if _=={}
     return {}
