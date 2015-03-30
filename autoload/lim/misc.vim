@@ -58,6 +58,12 @@ endfunction
 
 "=============================================================================
 "Vim:
+function! lim#misc#expand_keycodes(str) "{{{
+  return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
+endfunction
+"}}}
+
+
 function! lim#misc#get_cmdresults(cmd) "{{{
   let save_vfile = &verbosefile
   set verbosefile=

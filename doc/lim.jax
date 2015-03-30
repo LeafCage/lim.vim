@@ -10,6 +10,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
 概要				|lim-introduction|
 使い方				|lim-usage|
 モジュール			|lim-modules|
+  alzplugin			  |lim-modules-alzplugin|
   cmddef			  |lim-modules-cmddef|
   ui				  |lim-modules-ui|
   silo				  |lim-modules-silo|
@@ -48,10 +49,15 @@ https://github.com/LeafCage/oreo.vim
 し。
 
 ------------------------------------------------------------------------------
+lim-alzplugin					*lim-modules-alzplugin*
+Vimプラグインの構造を解析して、構成要素を収集・提示するモジュールである。
+詳細は|lim-alzplugin|参照。
+
+
+------------------------------------------------------------------------------
 lim-cmddef					*lim-modules-cmddef*
 ユーザ定義コマンド|user-commands|作成時に有用なモジュール。
 詳細は|lim-cmddef|参照。
-
 
 lim#cmddef#newCmdcmpl()
 	コマンド補完関数作成を補助するオブジェクトCmdcmplを返す。
@@ -64,18 +70,18 @@ lim#cmddef#newCmdParser()
 lim-modules-ui					*lim-modules-ui*
 キー入力型インターフェイスを提供する。詳細は|lim-ui|参照。
 
-
 lim#ui#select()
 	任意の文字列を使って複数の選択肢の中から1つを選ばせるインターフェイス
 	である。|inputlist()|と同じような使い方が出来る。
 
 lim#ui#keybind()
+	ctrlp 型の辞書によるキーマッピング定義を引数として取り、ユーザからの入
+	力を受け、実行すべきアクションを返す。
 
 
 ------------------------------------------------------------------------------
 lim-modules-silo				*lim-modules-silo*
 テーブル1つの簡易なデータベースのようなものを提供する。詳細は|lim-silo|参照。
-
 
 lim#silo#newSilo()
 	永続化されたファイルを読み込み、Siloオブジェクトを返す。
@@ -84,12 +90,13 @@ lim#silo#newSilo()
 
 ------------------------------------------------------------------------------
 lim-modules-keynotation				*lim-modules-keynotation*
+特殊な文字を、Vimヘルプでよく使われるキーコード表記に置き換える。
 
-						*lim#keynotation#decode()*
-lim#keynotation#decode({str})
-	文字列{str}の内、<CR> や <C-a> など、Vim のヘルプで使われるキーコード
-	表記|key-notation|で表すことができるものがあるのならそれに置き換えて、
-	その文字列を返す。
+lim#keynotation#decode({str})			*lim#keynotation#decode()*
+	文字列{str}の中の特殊な文字の内、<CR> や <C-a> など、Vim のヘルプで使
+	われるキーコード表記|key-notation|で表すことができるものがあるのならそ
+	れに置き換えて、その文字列を返す。
+	これの逆バージョンは|lim#misc#expand_keycodes()|である。
 
 
 ------------------------------------------------------------------------------
@@ -99,6 +106,11 @@ lim-modules-misc				*lim-modules-misc*
 
 --------------------------------------
 Vim:
+
+lim#misc#expand_keycodes({str})			*lim#misc#expand_keycodes()*
+	文字列{str}の内、"<CR>" や "<C-a>" などの表記を、該当する文字に置き換
+	える。|lim#keynotation#decode()|の逆バージョンと言える。
+
 
 lim#misc#get_cmdresults({cmd})			*lim#misc#get_cmdresults()*
 	EXコマンド|ex-cmd-index|のうち、結果をコマンドライン域に表示するコマン
@@ -137,7 +149,6 @@ lim#misc#get_sfuncs([{path}])			*lim#misc#get_sfunc()*
 		echo s:s.example()
 			" #=> 'hello!'
 <
-
 
 --------------------------------------
 Data:
