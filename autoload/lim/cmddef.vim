@@ -9,7 +9,7 @@ let s:TYPE_STR = type('')
 "Misc:
 let s:func = {}
 function! s:func._get_optignorepat() "{{{
-  return '^\%('.self.shortoptbgn.'\|'.self.longoptbgn.'\)\S'
+  return '^\%('.self._shortoptbgn.'\|'.self._longoptbgn.'\)\S'
 endfunction
 "}}}
 function! s:func._get_arg(pat, variadic, list) "{{{
@@ -56,8 +56,8 @@ let s:Classifier = {}
 function! s:newClassifier(candidates, longoptbgn, shortoptbgn) "{{{
   let obj = copy(s:Classifier)
   let obj.candidates = a:candidates
-  let obj.longoptbgn = '^'.a:longoptbgn
-  let obj.shortoptbgn = '^'.a:shortoptbgn
+  let obj._longoptbgn = '^'.a:longoptbgn
+  let obj._shortoptbgn = '^'.a:shortoptbgn
   let obj.short = []
   let obj.long = []
   let obj.other = []
@@ -107,9 +107,9 @@ function! s:Classifier._classify_candy(candy) "{{{
 endfunction
 "}}}
 function! s:Classifier._add(candy) "{{{
-   if a:candy =~ self.longoptbgn
+   if a:candy =~ self._longoptbgn
      return add(self.long, a:candy)
-   elseif a:candy =~ self.shortoptbgn
+   elseif a:candy =~ self._shortoptbgn
      return add(self.short, a:candy)
    else
      return add(self.other, a:candy)
@@ -123,19 +123,19 @@ endfunction
 let s:Cmdcmpl = {}
 function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj = copy(s:Cmdcmpl)
-  let funcopts = a:0 ? a:1 : {}
-  let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
-  let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
-  let obj.order = get(funcopts, 'order', ['long', 'short', 'other'])
-  let obj.sort = get(funcopts, 'sort', {'long': &ic, 'short': &ic, 'other': -1})
+  let behavior = a:0 ? a:1 : {}
+  let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
+  let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
+  let obj._order = get(behavior, 'order', ['long', 'short', 'other'])
+  let obj._sort = get(behavior, 'sort', {'long': &ic, 'short': &ic, 'other': -1})
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
-  let obj.is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
+  let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
   let obj.beens = split(a:cmdline, '\%(\\\@<!\s\)\+')[1:]
   let obj.leftwords = split(a:cmdline[:(a:cursorpos-1)], '\%(\\\@<!\s\)\+')
-  let obj.arglead = obj.is_on_edge ? '' : obj.leftwords[-1]
-  let obj.preword = obj.is_on_edge ? obj.leftwords[-1] : obj.leftwords[-2]
-  let obj.save_leftargscnt = {}
+  let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
+  let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
+  let obj._save_leftargscnt = {}
   return obj
 endfunction
 "}}}
@@ -149,20 +149,20 @@ function! s:Cmdcmpl.count_lefts(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : self._get_optignorepat()
   let ignorepat = ignorepat=='' ? NULL : ignorepat
-  if has_key(self.save_leftargscnt, ignorepat)
-    return self.save_leftargscnt[ignorepat]
+  if has_key(self._save_leftargscnt, ignorepat)
+    return self._save_leftargscnt[ignorepat]
   end
-  let transient = copy(self.leftwords)
+  let leftwords = copy(self.leftwords)
   if ignorepat != NULL
-    call filter(transient, 'v:val !~# ignorepat')
+    call filter(leftwords, 'v:val !~# ignorepat')
   end
-  let ret = len(transient)-1
-  let self.save_leftargscnt[ignorepat] = self.is_on_edge ? ret : ret-1
-  return self.save_leftargscnt[ignorepat]
+  let ret = len(leftwords)
+  let self._save_leftargscnt[ignorepat] = self._is_on_edge ? ret : ret-1
+  return self._save_leftargscnt[ignorepat]
 endfunction
 "}}}
 function! s:Cmdcmpl.should_optcmpl() "{{{
-  let pat = '^'.self.shortoptbgn.'\|^'.self.longoptbgn
+  let pat = '^'.self._shortoptbgn.'\|^'.self._longoptbgn
   return pat!='^\|^' && self.arglead =~# pat
 endfunction
 "}}}
@@ -188,16 +188,16 @@ endfunction
 "}}}
 function! s:Cmdcmpl.mill(candidates, ...) "{{{
   let matchtype = 'forward'
-  let funcopts = {}
+  let behavior = {}
   let l = a:0
   while l
     let l -= 1
-    exe 'let' (type(a:000[l])==s:TYPE_STR ? 'matchtype' : 'funcopt') '= a:000[l]'
+    let {type(a:000[l])==s:TYPE_STR ? 'matchtype' : 'behavior'} = a:000[l]
   endwhile
-  let reuses = get(funcopts, 'reuses', [])
-  let order = get(funcopts, 'order', self.order)
-  let sort = get(funcopts, 'sort', self.sort)
-  let classifier = s:newClassifier(a:candidates, self.longoptbgn, self.shortoptbgn)
+  let reuses = get(behavior, 'reuses', [])
+  let order = get(behavior, 'order', self._order)
+  let sort = get(behavior, 'sort', self._sort)
+  let classifier = s:newClassifier(a:candidates, self._longoptbgn, self._shortoptbgn)
   if type(reuses)==s:TYPE_LIST
     let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
     call classifier.set_classified_candies(beens)
@@ -240,10 +240,10 @@ endfunction
 let s:CmdParser = {}
 function! lim#cmddef#newCmdParser(args, ...) "{{{
   let obj = copy(s:CmdParser)
-  let funcopts = a:0 ? a:1 : {}
-  let obj.longoptbgn = get(funcopts, 'longoptbgn', '--')
-  let obj.shortoptbgn = get(funcopts, 'shortoptbgn', '-')
-  let obj.assignpat = get(funcopts, 'assignpat', '=')
+  let behavior = a:0 ? a:1 : {}
+  let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
+  let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
+  let obj.assignpat = get(behavior, 'assignpat', '=')
   let obj.endpat = '\%('. obj.assignpat. '\(.*\)\)\?$'
   let obj.args = a:args
   let obj.args_original = copy(a:args)
@@ -295,7 +295,7 @@ endfunction
 "}}}
 
 function! s:CmdParser._get_optval_evalset(vals, part_of_pats) "{{{
-  let [default, pats, invertpats] = [0, [self.longoptbgn. a:part_of_pats], []]
+  let [default, pats, invertpats] = [0, [self._longoptbgn. a:part_of_pats], []]
   if type(a:vals) != s:TYPE_LIST
     return [a:vals, pats, invertpats]
   end
@@ -337,19 +337,19 @@ function! s:CmdParser._get_optval(optval_evalset) "{{{
 endfunction
 "}}}
 function! s:CmdParser._solve_optpat(pat) "{{{
-  if a:pat =~# '^'.self.longoptbgn || a:pat !~# '^'.self.shortoptbgn.'.$'
+  if a:pat =~# '^'.self._longoptbgn || a:pat !~# '^'.self._shortoptbgn.'.$'
     let i = match(self.args, '^'.a:pat. self.endpat, self._first)
     if i!=-1 && i <= self._last
       call self._adjust_ranges()
       return [self._solve_optval(substitute(remove(self.args, i), '^'. a:pat, '', '')), 1]
     end
   else
-    let shortchr = matchstr(a:pat, '^'.self.shortoptbgn.'\zs.$')
-    let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self.longoptbgn, self.shortoptbgn, shortchr, self.endpat), self._first)
+    let shortchr = matchstr(a:pat, '^'.self._shortoptbgn.'\zs.$')
+    let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self._longoptbgn, self._shortoptbgn, shortchr, self.endpat), self._first)
     if i!=-1 && i <= self._last
       let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
-      let self.args[i] = substitute(self.args[i], '^'. self.shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
-      if self.args[i] ==# self.shortoptbgn
+      let self.args[i] = substitute(self.args[i], '^'. self._shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
+      if self.args[i] ==# self._shortoptbgn
         unlet self.args[i]
         call self._adjust_ranges()
       end
