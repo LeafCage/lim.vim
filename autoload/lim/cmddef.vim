@@ -75,10 +75,18 @@ endfunction
 function! s:Classifier.join_candidates(order, sort) "{{{
   for elm in ['long', 'short', 'other']
     if get(a:sort, elm, -1) != -1
-      exe 'call sort(self[elm], '. (a:sort[elm] ? a:sort[elm] : ''). ')'
+      exe 'call sort(self[elm], '. (empty(a:sort[elm]) ? '' : a:sort[elm]). ')'
     end
   endfor
-  return self[a:order[0]] + self[a:order[1]] + self[a:order[2]]
+  let ret = []
+  for name in a:order
+    if has_key(self, name)
+      call extend(ret, self[name])
+    else
+      echoerr 'invalid order name:' order
+    end
+  endfor
+  return ret
 endfunction
 "}}}
 function! s:Classifier._classify_candy(candy) "{{{
