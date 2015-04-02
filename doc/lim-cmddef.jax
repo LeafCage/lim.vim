@@ -61,7 +61,14 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	Cmdcmpl.beens			(リスト)
 		既に入力されているコマンドライン文字列を引数ごとに区切ってリス
 		ト化したもの。
+
+	Cmdcmpl.command			(文字列)
+		入力されている文字列の内、コマンドにあたる部分。
+
 	--------~
+	Cmdcmpl.has_bang()
+	入力中のコマンドが !修飾子付きなら1、そうでなければ0を返す。
+
 
 	Cmdcmpl.count_lefts([{ignorepat}])
 	行頭からカーソル位置までにいくつ完成した引数をそのコマンドが持ってるか
