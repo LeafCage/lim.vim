@@ -7,6 +7,18 @@ let s:TYPE_DICT = type({})
 let s:TYPE_STR = type('')
 
 "Misc:
+function! s:split_into_words(cmdline) "{{{
+  return split(a:cmdline, '\%(\\\@!<\\\)\@<!\s\+')
+endfunction
+"}}}
+function! s:_matches(pat, list) "{{{
+  if type(a:pat)==s:TYPE_LIST
+    return filter(a:list, 'index(a:pat, v:val)!=-1')
+  end
+  return filter(a:list, 'v:val =~ a:pat')
+endfunction
+"}}}
+
 let s:func = {}
 function! s:func._get_optignorepat() "{{{
   return '^\%('.self._shortoptbgn.'\|'.self._longoptbgn.'\)\S'
@@ -42,13 +54,6 @@ function! s:_solve_variadic_for_set_default(variadic, default) "{{{
     unlet val
   endfor
   return [num, default]
-endfunction
-"}}}
-function! s:_matches(pat, list) "{{{
-  if type(a:pat)==s:TYPE_LIST
-    return filter(a:list, 'index(a:pat, v:val)!=-1')
-  end
-  return filter(a:list, 'v:val =~ a:pat')
 endfunction
 "}}}
 
@@ -131,8 +136,8 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
-  let [obj.command; obj.beens] = split(a:cmdline, '\%(\\\@<!\s\)\+')
-  let obj.leftwords = split(a:cmdline[:(a:cursorpos-1)], '\%(\\\@<!\s\)\+')[1:]
+  let [obj.command; obj.beens] = s:split_into_words(a:cmdline)
+  let obj.leftwords = s:split_into_words(a:cmdline[:(a:cursorpos-1)])[1:]
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
   let obj._save_leftargscnt = {}

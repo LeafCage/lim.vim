@@ -52,6 +52,14 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	Cmdcmplオブジェクトは以下の変数とメソッドを持つ。
 	変数は変更可能だが、そうすると各メソッドの結果が変化するかもしれない。
 	--------~
+	Cmdcmpl.cmdline			(文字列)
+		渡された引数{cmdline}に等しい。コマンドライン全体を表す。
+
+	Cmdcmpl.cursorpos		(数値)
+		渡された引数{cursorpos}に等しい。カーソル位置(バイト単位のイン
+		デックス)を表す。コマンドライン先頭からカーソル位置までの文字
+		列長に等しい。
+
 	Cmdcmpl.arglead			(文字列)
 		補完対象の文字列。
 
