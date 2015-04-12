@@ -142,7 +142,7 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	ものを全て返す。
 
 
-	Cmdcmpl.mill({candidates}, [{behavior}])
+	Cmdcmpl.filtered({candidates}, [{behavior}])
 	補完候補のリスト{candidates}から、文脈に応じて不要なものを削除したリス
 	トを返す。文脈とは、既に入力されている文字列や、補完対象の文字列
 	(arglead)などである。{candidates}は文字列のリストだが、さらにその中で

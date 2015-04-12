@@ -195,7 +195,7 @@ function! s:Cmdcmpl.match_lefts(pat) "{{{
   return s:_matches(a:pat, copy(self.leftwords))
 endfunction
 "}}}
-function! s:Cmdcmpl.mill(candidates, ...) "{{{
+function! s:Cmdcmpl.filtered(candidates, ...) "{{{
   let behavior = get(a:, 1, {})
   let reuses = get(behavior, 'reuses', [])
   let order = get(behavior, 'order', self._order)
@@ -218,23 +218,23 @@ function! s:Cmdcmpl.mill(candidates, ...) "{{{
   return candidates
 endfunction
 "}}}
-function! s:Cmdcmpl._millby_arglead_none(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_none(candidates) "{{{
   return a:candidates
 endfunction
 "}}}
-function! s:Cmdcmpl._millby_arglead_forward(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_forward(candidates) "{{{
   return filter(a:candidates, 'v:val =~ "^".self.arglead')
 endfunction
 "}}}
-function! s:Cmdcmpl._millby_arglead_backword(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_backword(candidates) "{{{
   return filter(a:candidates, 'v:val =~ self.arglead."$"')
 endfunction
 "}}}
-function! s:Cmdcmpl._millby_arglead_partial(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_partial(candidates) "{{{
   return filter(a:candidates, 'v:val =~ self.arglead')
 endfunction
 "}}}
-function! s:Cmdcmpl._millby_arglead_exact(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_exact(candidates) "{{{
   return filter(a:candidates, 'v:val == self.arglead')
 endfunction
 "}}}
