@@ -142,7 +142,7 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	ものを全て返す。
 
 
-	Cmdcmpl.mill({candidates}, [[{match-type}], [{behavior}]])
+	Cmdcmpl.mill({candidates}, [{behavior}])
 	補完候補のリスト{candidates}から、文脈に応じて不要なものを削除したリス
 	トを返す。文脈とは、既に入力されている文字列や、補完対象の文字列
 	(arglead)などである。{candidates}は文字列のリストだが、さらにその中で
@@ -150,16 +150,19 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 		[['--foo', '-f'], '--bar', ['--open', '--close', '-o', '-c']]
 <	といった具合に。オプションのショートネームや同時に指定できないものを一
 	纏(ひとまと)めにする。
-	補完対象に対するマッチングは既定では前方一致だが、{match-type}で変更す
-	ることができる。{match-type}には次の文字列のいずれかを指定する。
-		"forward"	arglead に前方一致するものに絞り込む。既定。
-		"backword"	arglead に後方一致するものに絞り込む。
-		"partial"	arglead に部分一致するものに絞り込む。
-		"exact"		arglead に完全一致するものに絞り込む。
-		"none"		arglead による絞り込みをしない。
 
 	辞書{behavior}で挙動を変更可能。{behavior}は以下のキーを持たせられる。
 	--------~
+	matching		(文字列)
+		既定値: "forward"
+		補完対象に対するマッチングの方式を指定する。以下のいずれかの値
+		を指定する。無効な値が指定された場合、絞り込みをしない。
+		    "forward"	arglead に前方一致するものに絞り込む。既定。
+		    "backword"	arglead に後方一致するものに絞り込む。
+		    "partial"	arglead に部分一致するものに絞り込む。
+		    "exact"	arglead に完全一致するものに絞り込む。
+		    "none"	arglead による絞り込みをしない。
+
 	reuses			(文字列のリスト/数値)
 		既定値: []
 		数値1を指定すると入力され終わった他の引数に被る補完候補があっ

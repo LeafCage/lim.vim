@@ -196,16 +196,11 @@ function! s:Cmdcmpl.match_lefts(pat) "{{{
 endfunction
 "}}}
 function! s:Cmdcmpl.mill(candidates, ...) "{{{
-  let matchtype = 'forward'
-  let behavior = {}
-  let l = a:0
-  while l
-    let l -= 1
-    let {type(a:000[l])==s:TYPE_STR ? 'matchtype' : 'behavior'} = a:000[l]
-  endwhile
+  let behavior = get(a:, 1, {})
   let reuses = get(behavior, 'reuses', [])
   let order = get(behavior, 'order', self._order)
   let sort = get(behavior, 'sort', self._sort)
+  let matching = get(behavior, 'matching', 'forward')
   let classifier = s:newClassifier(a:candidates, self._longoptbgn, self._shortoptbgn)
   if type(reuses)==s:TYPE_LIST
     let beens = filter(copy(self.beens), 'index(reuses, v:val)==-1')
@@ -216,9 +211,9 @@ function! s:Cmdcmpl.mill(candidates, ...) "{{{
   end
   let candidates = classifier.join_candidates(order, sort)
   try
-    let candidates = self['_millby_arglead_'.matchtype](candidates)
+    let candidates = self['_filtered_by_'. matching](candidates)
   catch /E716:/
-    echoerr 'lim/cmddef: invalid argument > "'. matchtype. '"'
+    echoerr 'lim/cmddef: invalid argument > "'. behavior.matching . '"'
   endtry
   return candidates
 endfunction
