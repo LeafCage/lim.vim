@@ -121,7 +121,7 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
   let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
-  let [obj.command; obj.beens] = s:split_into_words(a:cmdline)
+  let [obj.command; obj.inputs] = s:split_into_words(a:cmdline)
   let obj.leftwords = s:split_into_words(a:cmdline[:(a:cursorpos-1)])[1:]
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
@@ -165,11 +165,11 @@ function! s:Cmdcmpl.is_matched(pat) "{{{
 endfunction
 "}}}
 function! s:Cmdcmpl.get(pat, ...) "{{{
-  return self._get_arg(a:pat, a:000, self.beens)
+  return self._get_arg(a:pat, a:000, self.inputs)
 endfunction
 "}}}
 function! s:Cmdcmpl.matches(pat) "{{{
-  return s:_matches(a:pat, copy(self.beens))
+  return s:_matches(a:pat, copy(self.inputs))
 endfunction
 "}}}
 function! s:Cmdcmpl.get_left(pat, ...) "{{{
@@ -180,36 +180,36 @@ function! s:Cmdcmpl.match_lefts(pat) "{{{
   return s:_matches(a:pat, copy(self.leftwords))
 endfunction
 "}}}
-function! s:Cmdcmpl._filtered_by_inputed(candidates) "{{{
+function! s:Cmdcmpl._filtered_by_inputs(candidates) "{{{
   let canddicts = map(a:candidates, 's:dictify_{type(v:val)}(v:val)')
   let should_del_groups = {}
   for canddict in canddicts
-    if index(self.beens, get(canddict, 'word', ''))!=-1
+    if index(self.inputs, get(canddict, 'word', ''))!=-1
       call extend(should_del_groups, canddict.division)
     end
   endfor
   let expr = should_del_groups=={} ? '' : '!('. join(map(keys(should_del_groups), '"has_key(v:val.division, ''". v:val. "'')"'), '||'). ') &&'
-  call filter(canddicts, 'v:val!={} && ( v:val.is_parm || '. expr. ' index(self.beens, v:val.word)==-1 )')
+  call filter(canddicts, 'v:val!={} && ( v:val.is_parm || '. expr. ' index(self.inputs, v:val.word)==-1 )')
   return map(canddicts, 'v:val.word')
 endfunction
 "}}}
 function! s:Cmdcmpl.filtered(candidates) "{{{
-  let candidates = self._filtered_by_inputed(a:candidates)
+  let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val =~ "^".self.arglead')
 endfunction
 "}}}
 function! s:Cmdcmpl.backward_filtered(candidates) "{{{
-  let candidates = self._filtered_by_inputed(a:candidates)
+  let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val =~ self.arglead."$"')
 endfunction
 "}}}
 function! s:Cmdcmpl.partial_filtered(candidates) "{{{
-  let candidates = self._filtered_by_inputed(a:candidates)
+  let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val =~ self.arglead')
 endfunction
 "}}}
 function! s:Cmdcmpl.exact_filtered(candidates) "{{{
-  let candidates = self._filtered_by_inputed(a:candidates)
+  let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val == self.arglead')
 endfunction
 "}}}

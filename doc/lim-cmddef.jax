@@ -50,7 +50,7 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	Cmdcmpl.preword			(文字列)
 		|arglead|の1つ前の入力文字列。
 
-	Cmdcmpl.beens			(リスト)
+	Cmdcmpl.inputs			(リスト)
 		既に入力されているコマンドライン文字列を引数ごとに区切ってリス
 		ト化したもの。
 
@@ -75,7 +75,7 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	{ignorepat}が '^-' だと結果が1になる。{ignorepat}が指定なしならば2。
 	これは - で始まる引数はオプションとして無視したいときなどに役立つ。
 	ちなみに 内部変数について、self.trackwords[self.count_lefts()]
-	は self.preword に、get(self.beens, self.count_lefts(), '') は
+	は self.preword に、get(self.inputs, self.count_lefts(), '') は
 	self.argleadに一致する。
 
 
@@ -127,9 +127,9 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 
 
 	Cmdcmpl.filtered({candidates})
-	補完候補リスト{candidates}から、文脈に応じて不要なものを削除し
-	たリストを返す。文脈とは、既に入力されている文字列や補完対象の文字列
-	(arglead)などである。argleadに前方一致マッチする候補が使われる。
+	補完候補リスト{candidates}から、文脈に応じて不要なものを削除したリスト
+	を返す。文脈とは、既に入力されている文字列や補完対象の文字列(arglead)
+	などである。argleadに前方一致マッチする候補が使われる。
 	補完候補リスト{candidates}の要素は、文字列か、リストである。
 	文字列の場合、例えば以下のようなリストを渡すと、 >
 		["foo", "bar", "baz", "qux"]
@@ -138,10 +138,11 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	候補が所属するグループである。
 	グループは排他的な候補を作るのに利用する。 >
 		["foo", ["bar", "BARZ"], ["baz", "BARZ"], "qux"]
-<	この場合、"bar" と "baz" が "BARZ"というグループに属し、コマンドライン
-	にいずれかが入力されているのならもう片方は補完候補から除外される。
+<	この場合、"foo" "bar" "baz" "qux" という候補があり、"bar" と "baz" は
+	"BARZ" というグループに属している。、コマンドラインに "bar" "baz" のい
+	ずれかが既に入力されているなら、もう片方も補完候補から除外される。
 	グループの指定を複数することができる。それには第二要素をリストにするか
-	、第三要素以降を利用する。以下の指定は同じ結果となる。 >
+	、第三要素以降を利用する。以下の2種類の指定は同じ結果となる。 >
 		[["foo", ["A","B"]], ["bar", "A"], ["baz", "B"], "qux"]
 		[["foo", "A","B"], ["bar", "A"], ["baz", "B"], "qux"]
 <	この場合、"foo" は "A" "B" 両グループに所属するので、"bar" "baz" のど
@@ -160,18 +161,18 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 
 
 	Cmdcmpl.backward_filtered({candidates})
-		|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく後方
-		一致で絞り込む。
+	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく後方一致で絞
+	り込む。
 
 
 	Cmdcmpl.partial_filtered({candidates})
-		|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく部分
-		一致で絞り込む。
+	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく部分一致で絞
+	り込む。
 
 
 	Cmdcmpl.exact_filtered({candidates})
-		|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく完全
-		一致で絞り込む。
+	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく完全一致で絞
+	り込む。
 
 
 
