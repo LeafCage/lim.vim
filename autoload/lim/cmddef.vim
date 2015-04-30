@@ -24,11 +24,11 @@ function! s:dictify_{s:TYPE_STR}(candidate) "{{{
 endfunction
 "}}}
 function! s:dictify_{s:TYPE_NUM}(candidate) "{{{
-  return {'word': a:candidate, 'is_parm': 0, 'division': {}}
+  return {'word': string(a:candidate), 'is_parm': 0, 'division': {}}
 endfunction
 "}}}
 function! s:dictify_{s:TYPE_FLOAT}(candidate) "{{{
-  return {'word': a:candidate, 'is_parm': 0, 'division': {}}
+  return {'word': string(a:candidate), 'is_parm': 0, 'division': {}}
 endfunction
 "}}}
 function! s:dictify_{s:TYPE_LIST}(candidatelist) "{{{
@@ -39,7 +39,7 @@ function! s:dictify_{s:TYPE_LIST}(candidatelist) "{{{
   if !(type==s:TYPE_NUM || type==s:TYPE_FLOAT || type==s:TYPE_STR && a:candidatelist[0]!='')
     return {}
   end
-  let ret = {'word': a:candidatelist[0], 'is_parm': 0, 'division': {}}
+  let ret = {'word': type==s:TYPE_STR ? a:candidatelist[0] : string(a:candidatelist[0]), 'is_parm': 0, 'division': {}}
   call s:_fill_canddict(ret, a:candidatelist[1:])
   return ret
 endfunction
