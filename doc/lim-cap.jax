@@ -1,24 +1,24 @@
-*lim-ui.txt*	キー入力型インターフェイスを提供する。
-*lim-ui*
+*lim-cap.txt*	キー入力型インターフェイスを提供する。
+*lim-cap*
 
 ==============================================================================
-概要						*lim-ui-introduction*
+概要						*lim-cap-introduction*
 
-キー入力型インターフェイスを提供する。
+ユーザからのキー入力を受け取り、それに応じて処理を実行するための部品である。
 
 
 ==============================================================================
-インターフェイス				*lim-ui-interface*
+インターフェイス				*lim-cap-interface*
 
 ------------------------------------------------------------------------------
-関数						*lim-ui-functions*
+関数						*lim-cap-functions*
 
-						*lim#ui#select()*
-lim#ui#select({prompt}, {choices}, [{behavior}])
+						*lim#cap#select()*
+lim#cap#select({prompt}, {choices}, [{behavior}])
 	プロンプト{prompt}と選択肢を表示し、その中から1つを任意の文字列をユー
 	ザに入力されて選ばせる。|inputlist()|と同じような使い方が出来る。
 	戻り値はリストである。その中身は [入力, 説明, その他の要素..] となって
-	いる(後述)。 |lim#ui#select()-return-value|
+	いる(後述)。 |lim#cap#select()-return-value|
 	省略可能な辞書{behavior}(辞書)で関数の挙動を変更できる。
 	{behavior}は以下のキーを持つことができる。
 	--------~
@@ -78,8 +78,8 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 		\ ]
 <	これらは処理上は無視されるが、戻り値には現れるので以降の処理で利用する
 	ことが出来る。
-					*lim#ui#select()-return-value*
-	lim#ui#select()の戻り値は選択肢{choices}の中にある、選択された小リ
+					*lim#cap#select()-return-value*
+	lim#cap#select()の戻り値は選択肢{choices}の中にある、選択された小リ
 	ストのようなものが返される。
 	例えば、上の例だと、ユーザが "a" を入力したときには >
 		['a', 'this is a', 'foo', 'bar', 'baz']
@@ -93,7 +93,7 @@ lim#ui#select({prompt}, {choices}, [{behavior}])
 
 
 
-lim#ui#keybind({binddefs}, [{behavior}])	*lim#ui#keybind()*
+lim#cap#keybind({binddefs}, [{behavior}])	*lim#cap#keybind()*
 	キー入力を受け取り、それがキーバインド定義{binddefs}で定義されたキーバ
 	インドと一致したならばそのアクション名を返す。
 	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド
@@ -107,7 +107,7 @@ lim#ui#keybind({binddefs}, [{behavior}])	*lim#ui#keybind()*
 	例 >
 	let def = {'act1': ['a', 'b1'], 'act2': 'b2', 'act3': "\<C-x>"}
 	echo "type 'a', 'b1', 'b2', or '<C-x>'"
-	let inputs = lim#ui#keybind(def)
+	let inputs = lim#cap#keybind(def)
 	if inputs!={}
 	  call s:{inputs.action}()
 	endif

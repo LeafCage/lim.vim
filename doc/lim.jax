@@ -12,7 +12,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
 モジュール			|lim-modules|
   alzplugin			  |lim-modules-alzplugin|
   cmddef			  |lim-modules-cmddef|
-  ui				  |lim-modules-ui|
+  cap				  |lim-modules-cap|
   silo				  |lim-modules-silo|
   keynotation			  |lim-modules-keynotation|
   misc				  |lim-modules-misc|
@@ -67,14 +67,15 @@ lim#cmddef#newCmdParser()
 
 
 ------------------------------------------------------------------------------
-lim-modules-ui					*lim-modules-ui*
-キー入力型インターフェイスを提供する。詳細は|lim-ui|参照。
+lim-modules-cap					*lim-modules-cap*
+ユーザからのキー入力を受け取り、それに応じて処理を実行するための部品である。
+詳細は|lim-cap|参照。
 
-lim#ui#select()
+lim#cap#select()
 	任意の文字列を使って複数の選択肢の中から1つを選ばせるインターフェイス
 	である。|inputlist()|と同じような使い方が出来る。
 
-lim#ui#keybind()
+lim#cap#keybind()
 	ctrlp 型の辞書によるキーマッピング定義を引数として取り、ユーザからの入
 	力を受け、実行すべきアクションを返す。
 
