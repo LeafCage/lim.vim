@@ -96,8 +96,9 @@ lim#cap#select({prompt}, {choices}, [{behavior}])
 lim#cap#keybind({binddefs}, [{behavior}])	*lim#cap#keybind()*
 	キー入力を受け取り、それがキーバインド定義{binddefs}で定義されたキーバ
 	インドと一致したならばそのアクション名を返す。
-	定義{binddefs}(辞書)のキーには任意のアクション名、値にはキーバインド
-	(文字列または文字列のリスト)を渡す。
+	定義{binddefs}(辞書)は|ctrlp.vim|のキーマッピング形式に似ている。すな
+	わち、キーに任意のアクション名、値にキーバインド(文字列または文字列の
+	リスト)を定義する。
 	戻り値は辞書である。その辞書は次のキーを持つ。
 		action		(文字列)
 			定義の中でマッチしたアクション名。マッチするものがなけ
@@ -143,6 +144,24 @@ lim#cap#keybind({binddefs}, [{behavior}])	*lim#cap#keybind()*
 		いてその関数の"self"にあたるオブジェクト(辞書)("dict"属性付き
 		関数でなければ省略可能)である。
 		NOTE: この機能を有効にするとCPUを多く消費するかもしれない。
+
+
+
+lim#cap#keymappings({keymappings}, [{behavior}])	*lim#cap#keymappings()*
+	|lim#cap#keybind()|と基本的な挙動や使い方は同じだが、キーマッピング定
+	義{keymappings}には、キーにキーマッピング、値にアクション名を定義する。
+	キーマッピング定義に特殊文字列を指定する場合は、直接特殊文字を指定しな
+	ければならない。("<C-a>"という形式は展開されない。"\<C-a>"という形で指
+	定するべきである。)
+	このため、{behavior}の "expand" キーは無効である。
+	例 >
+	let def = {"\<Down>": "next", "\<C-n>": "next",
+		\ "\<Up>": "prev", "\<C-p>": "prev", "abc": "abc_action"}
+	let inputs = lim#cap#keymappings(def)
+	if inputs!={}
+	  call s:{inputs.action}()
+	endif
+
 
 
 ==============================================================================

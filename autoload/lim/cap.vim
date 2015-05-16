@@ -191,17 +191,7 @@ endfunction
 function! lim#cap#keybind(binddefs, ...) abort "{{{
   let behavior = a:0 ? a:1 : {}
   let bindacts = s:_get_bindacts(a:binddefs, function(get(behavior, 'expand') ? 's:_expand_keycodes' : 's:_noexpand'))
-  let inputs = s:newInputs(keys(bindacts), behavior)
-  while 1
-    let char = inputs.receive()
-    if !has_key(bindacts, "\<C-c>") && char=="\<C-c>"
-      return {}
-    elseif inputs.should_break()
-      break
-    end
-  endwhile
-  let [justmatch, surplus] = inputs.get_results()
-  return {'action': get(bindacts, justmatch, ''), 'surplus': surplus}
+  return lim#cap#keymappings(bindacts, behavior)
 endfunction
 "}}}
 function! s:_get_bindacts(binddefs, expandfunc) "{{{
@@ -216,6 +206,22 @@ function! s:_get_bindacts(binddefs, expandfunc) "{{{
     endfor
   endfor
   return bindacts
+endfunction
+"}}}
+
+function! lim#cap#keymappings(keymappings, ...) abort "{{{
+  let behavior = a:0 ? a:1 : {}
+  let inputs = s:newInputs(keys(a:keymappings), behavior)
+  while 1
+    let char = inputs.receive()
+    if !has_key(a:keymappings, "\<C-c>") && char=="\<C-c>"
+      return {}
+    elseif inputs.should_break()
+      break
+    end
+  endwhile
+  let [justmatch, surplus] = inputs.get_results()
+  return {'action': get(a:keymappings, justmatch, ''), 'surplus': surplus}
 endfunction
 "}}}
 
