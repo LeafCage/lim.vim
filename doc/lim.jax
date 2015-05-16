@@ -114,6 +114,10 @@ lim-modules-misc				*lim-modules-misc*
 --------------------------------------
 Vim:
 
+lim#misc#viminfo_path()				*lim#misc#viminfo_path()*
+	viminfoファイル|viminfo-file|のパスを取得する。
+
+
 lim#misc#expand_keycodes({str})			*lim#misc#expand_keycodes()*
 	文字列{str}の内、"<CR>" や "<C-a>" などの表記を、該当する文字に置き換
 	える。|lim#keynotation#decode()|の逆バージョンと言える。

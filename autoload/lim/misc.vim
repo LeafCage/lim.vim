@@ -58,6 +58,15 @@ endfunction
 
 "=============================================================================
 "Vim:
+function! lim#misc#viminfo_path() "{{{
+  let path = matchstr(&viminfo, '^\%(.\+,\)\?n\zs.\+$')
+  if path!=''
+    return path
+  else
+    return (exists('$HOME') ? '$HOME' : exists('$VIM') ? '$VIM' : 'c:'). (has('win32') || has('win64') ? '/_viminfo' : '/.viminfo')
+  end
+endfunction
+"}}}
 function! lim#misc#expand_keycodes(str) "{{{
   return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
 endfunction
