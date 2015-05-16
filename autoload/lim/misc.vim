@@ -112,15 +112,16 @@ function! lim#misc#get_scriptpath(sid) "{{{
 endfunction
 "}}}
 function! lim#misc#get_scriptinfos(...) "{{{
-  let pat = !a:0 ? expand('%') : type(a:1)==s:TYPE_NR ? '^\s*'.a:1.':' : escape(a:1, ' .\')
-  let snames = lim#misc#get_cmdresults('scriptnames')
-  let ret = []
-  let idx = match(snames, pat)
-  while idx!=-1
-    call add(ret, snames[idx])
-    let idx = match(snames, pat, idx+1)
-  endwhile
-  return ret
+  if a:0 > 1
+    let expr = 'v:val =~ '''. escape(a:1, ' .\'). ''''
+    for str in a:000[1:]
+      let expr .= ' && v:val =~ '''. escape(str, ' .\'). ''''
+    endfor
+  else
+    let pat = !a:0 ? expand('%') : type(a:1)==s:TYPE_NR ? '^\s*'.a:1.':' : escape(a:1, ' .\')
+    let expr = 'v:val =~ pat'
+  end
+  return filter(lim#misc#get_cmdresults('scriptnames'), expr)
 endfunction
 "}}}
 

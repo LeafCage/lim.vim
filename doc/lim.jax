@@ -130,8 +130,9 @@ lim#misc#get_cmdresults({cmd})			*lim#misc#get_cmdresults()*
 
 lim#misc#get_sid([{path}])			*lim#misc#get_sid()*
 	Vim scriptのパス{path}を指定する。このパスはフルパスでも相対パスでもよ
-	い。それの script id を返す。{path}を省略した場合、現在開いているファ
-	イルで検索される。マッチがなければ 0 を返す。
+	い。読込済のスクリプトからパス{path}を検索し、script id を返す。
+	パス{path}を省略した場合、現在開いているファイルで検索される。マッチが
+	なければ 0 を返す。
 
 
 lim#misc#match_sids({pat})			*lim#misc#match_sids()*
@@ -139,13 +140,15 @@ lim#misc#match_sids({pat})			*lim#misc#match_sids()*
 
 
 lim#misc#get_scriptpath({sid})			*lim#misc#get_scriptname()*
-	script id {sid} のスクリプト名フルパスで取得する。存在しないときには空
-	文字列を返す。
+	読込済のスクリプトから script id が{sid}のスクリプトをフルパスで返す。
+	存在しないときには空文字列を返す。
 
 
-lim#misc#get_scriptinfos([{pat}])		*lim#misc#get_scriptinfos()*
-	パターン{pat}にマッチするscriptsの id と script名 をリストにして返す。
-	パターンが省略された場合現在バッファの情報を取得する。
+lim#misc#get_scriptinfos([{pat} ...])		*lim#misc#get_scriptinfos()*
+	パターン{pat}にマッチする読込済のスクリプトの script id と script名 を
+	リストにして返す。
+	複数のパターンを渡すとそれらに全てマッチするものが返される。
+	パターンが省略された場合、現在バッファの情報を取得する。
 	パターンに数値を指定すると script id で検索する。
 
 
