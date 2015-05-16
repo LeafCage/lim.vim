@@ -16,6 +16,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
   silo				  |lim-modules-silo|
   keynotation			  |lim-modules-keynotation|
   misc				  |lim-modules-misc|
+コマンド			 |lim-commands|
 
 
 ==============================================================================
@@ -199,6 +200,15 @@ lim#misc#infer_plugin_pathinfo({path})	*lim#misc#infer_plugin_pathinfo()*
 	る。
 	name は、推測されたプラグイン名である。actualname が空文字でないときに
 	は actualname が、そうでなければ rootname が使われる。
+
+
+==============================================================================
+コマンド					*lim-commands*
+
+:LimScriptInfos [{pat} ...]			*:LimScriptInfos*
+	|lim#misc#get_scriptinfos()|のコマンド版。読込済のスクリプトからパター
+	ン{pat}にマッチするスクリプトを表示する。パターンは複数渡すことが出来
+	る。パターンが省略された場合、現在開いているバッファの情報を表示する。
 
 
 ==============================================================================
