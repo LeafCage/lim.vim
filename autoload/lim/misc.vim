@@ -6,8 +6,9 @@ let s:TYPE_NR = type(0)
 
 "Misc:
 function! s:_get_rootpath_and_rootname_of(path) "{{{
+  let path = isdirectory(a:path) ? a:path : fnamemodify(a:path, ':h')
   for dir in ['after', 'autoload', 'plugin', 'syntax', 'ftplugin', 'ftdetect']
-    let findpath = finddir(dir, a:path. ';**/vimfiles;**/.vim')
+    let findpath = finddir(dir, path. ';**/vimfiles;**/.vim')
     if findpath == ''
       continue
     end
