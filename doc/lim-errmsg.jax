@@ -1,0 +1,40 @@
+*lim-errmsg.txt*	エラーメッセージを加工して表示する。
+*lim-errmsg*
+
+==============================================================================
+概要						*lim-errmsg-introduction*
+
+|v:throwpoint|と|v:exception| を加工して表示させます。
+エラーメッセージを表示させたいけれど、Vimのエラーとして捕捉されたくないときな
+どに利用します。
+
+
+==============================================================================
+インターフェイス				*lim-errmsg-interface*
+
+------------------------------------------------------------------------------
+関数						*lim-errmsg-functions*
+
+						*lim#errmsg#echom_exception()*
+lim#errmsg#echom_exception([{throwpoint-pre-msg},] {exception-pre-msg})
+	|:catch| ~ |:endtry| 間で使用する。
+	エラーメッセージ{exception-pre-msg}に、捕捉された例外|v:exception|が
+	空白で連結されて表示される。
+	例外発生位置説明メッセージ{throwpoint-pre-msg}も渡すと、それに
+	|v:throwpoint|が空白で連結された上で、エラーメッセージの前に表示される
+	。
+	{throwpoint-pre-msg}が空文字の場合、"Error detected while processing "
+	という文字列が適切な文字が代わりに使われる。
+	ハイライトには|ErrorMsg|が使われ、メッセージ履歴に残るが、|:echomsg|が
+	使われ、Vimの処理においてエラーとして扱われない。
+
+
+						*lim#errmsg#echo_exception()*
+lim#errmsg#echo_exception([{throwpoint-pre-msg},] {exception-pre-msg})
+	エラーメッセージを|:echomsg|の代わりに|:echo|を用いて表示する。
+	メッセージは履歴に残らない。
+	それ以外の機能は|lim#errmsg#echomsg()|と同じである。
+
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:fen:
