@@ -119,6 +119,12 @@ lim#misc#viminfo_path()				*lim#misc#viminfo_path()*
 	viminfoファイル|viminfo-file|のパスを取得する。
 
 
+lim#misc#total_winheight()			*lim#misc#total_winheight()*
+	ウィンドウの、バッファ表示領域として利用できる行数を返す。
+	これは 'lines' から 'showtabline' や 'cmdheight' やステータスラインを
+	引いたものである。
+
+
 lim#misc#expand_keycodes({str})			*lim#misc#expand_keycodes()*
 	文字列{str}の内、"<CR>" や "<C-a>" などの表記を、該当する文字に置き換
 	える。|lim#keynotation#decode()|の逆バージョンと言える。

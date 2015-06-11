@@ -68,6 +68,12 @@ function! lim#misc#viminfo_path() "{{{
   end
 endfunction
 "}}}
+function! lim#misc#total_winheight() "{{{
+  let ls = &laststatus>1 || &laststatus && winnr('$')>1
+  let stal = &showtabline>1 || &showtabline && tabpagenr('$')>1
+  return &lines - stal - ls - &l:cmdheight
+endfunction
+"}}}
 function! lim#misc#expand_keycodes(str) "{{{
   return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
 endfunction
