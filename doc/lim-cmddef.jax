@@ -14,6 +14,11 @@
 ------------------------------------------------------------------------------
 関数						*lim-cmddef-functions*
 
+lim#cmddef#split_into_words({str})	*lim#cmddef#split_into_words()*
+	文字列{str}を単語に分割して|List|にする。単語の境は空白文字である。た
+	だしバックスラッシュでエスケープされている空白文字は境にならない。
+
+
 						*lim#cmddef#newCmdcmpl()*
 lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	これはコマンド補完関数|:command-completion-customlist|内で利用し、コマ
@@ -178,8 +183,9 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 
 						*lim#cmddef#newCmdParser()*
 lim#cmddef#newCmdParser({args}, [{behavior}])
-	コマンド実行時に渡された引数を解釈するパーサ CmdParser を返す。{args}
-	はコマンド引数を単語で区切ってリスト化させたものである。
+	コマンド実行時に渡された引数を解釈するパーサ CmdParser を返す。
+	{args}はコマンド引数を単語で区切ってリスト化させたものである。必要に応
+	じて|lim#cmddef#split_into_words()|を使用すると良い。
 	省略可能な引数{behavior}は辞書であり、次のキーを持たせることができる。
 	----------------~
 	longoptbgn		(文字列)
