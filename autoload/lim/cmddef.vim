@@ -213,17 +213,29 @@ endfunction
 "}}}
 function! s:Cmdcmpl.filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
-  return filter(candidates, 'v:val =~ "^".self.arglead')
+  let pat = '^\V'. escape(self.arglead, '\')
+  if self.arglead=~'\s'
+    let pat .= '\|'. escape(substitute(self.arglead, '\\\@<!\\ ', ' ', 'g'), '\')
+  end
+  return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
 function! s:Cmdcmpl.backward_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
-  return filter(candidates, 'v:val =~ self.arglead."$"')
+  let pat = '\V'. escape(self.arglead, '\'). '\$'
+  if self.arglead=~'\s'
+    let pat .= '\|'. escape(substitute(self.arglead, '\\\@<!\\ ', ' ', 'g'), '\')
+  end
+  return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
 function! s:Cmdcmpl.partial_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
-  return filter(candidates, 'v:val =~ self.arglead')
+  let pat = '\V'. escape(self.arglead, '\')
+  if self.arglead=~'\s'
+    let pat .= '\|'. escape(substitute(self.arglead, '\\\@<!\\ ', ' ', 'g'), '\')
+  end
+  return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
 function! s:Cmdcmpl.exact_filtered(candidates) "{{{
