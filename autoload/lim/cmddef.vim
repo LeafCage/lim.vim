@@ -145,7 +145,7 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
   let obj.cmdline = a:cmdline
   let obj.cursorpos = a:cursorpos
-  let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='/' || a:cmdline[a:cursorpos-3]=='/'
+  let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='\' || a:cmdline[a:cursorpos-3]=='\'
   let [obj.command; obj.inputs] = lim#cmddef#split_into_words(a:cmdline)
   let obj.leftwords = lim#cmddef#split_into_words(a:cmdline[:(a:cursorpos-1)])[1:]
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
