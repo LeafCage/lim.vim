@@ -136,6 +136,20 @@ function! lim#cmddef#split_into_words(cmdline) "{{{
   return split(a:cmdline, '\%(\%([^\\]\|^\)\\\)\@<!\s\+')
 endfunction
 "}}}
+function! lim#cmddef#continuable() "{{{
+  return exists('s:save_context')
+endfunction
+"}}}
+function! lim#cmddef#continue() "{{{
+  if !exists('s:save_context')
+    return
+  end
+  let context = s:save_context
+  unlet s:save_context
+  let &wcm = context.wcm
+  return context.candidates
+endfunction
+"}}}
 
 let s:Cmdcmpl = {}
 function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
@@ -241,6 +255,19 @@ endfunction
 function! s:Cmdcmpl.exact_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val == self.arglead')
+endfunction
+"}}}
+function! s:Cmdcmpl.recognize_escaped_space(filtered_candidates) "{{{
+  if self.arglead !~ '\s' || a:filtered_candidates==[] || v:version > 703 || v:version==703 && has('patch615')
+    return a:filtered_candidates
+  end
+  let s:save_context = {'wcm': &wcm, 'candidates': a:filtered_candidates}
+  if len(a:filtered_candidates) > 1 && index(s:save_context.candidates, self.arglead)==-1
+    call add(s:save_context.candidates, self.arglead)
+  end
+  set wcm=<Tab>
+  call feedkeys(repeat("\<BS>", len(self.arglead)+1). "\<Tab>", 'n')
+  return [matchstr(self.arglead, '\S\+$'). ' ']
 endfunction
 "}}}
 
