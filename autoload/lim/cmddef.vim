@@ -129,6 +129,51 @@ function! s:_solve_variadic_for_set_default(variadic, default) "{{{
 endfunction
 "}}}
 
+function! s:func._solve_longopt_nomal(pat) "{{{
+  let i = match(self.args, '^'.a:pat. self._endpat, self._first)
+  if i==-1 || i > self._last
+    return ['', 0]
+  end
+  call self._adjust_ranges()
+  let optval = substitute(remove(self.args, i), '^'. a:pat, '', '')
+  return optval=='' ?  [1, 1] : [substitute(optval, '^'. self.assign, '', ''), 1]
+endfunction
+"}}}
+function! s:func._solve_shortopt_normal(pat) "{{{
+  let shortchr = matchstr(a:pat, '^'.self._shortoptbgn.'\zs.$')
+  let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self._longoptbgn, self._shortoptbgn, shortchr, self._endpat), self._first)
+  if i==-1 || i > self._last
+    return ['', 0]
+  end
+  let optval = matchstr(self.args[i], shortchr. '\zs'. self.assign.'.*$')
+  let self.args[i] = substitute(self.args[i], '^'. self._shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assign.'.*'), '', '')
+  if self.args[i] ==# self._shortoptbgn
+    unlet self.args[i]
+    call self._adjust_ranges()
+  end
+  return optval=='' ? [1, 1] : [substitute(optval, '^'. self.assign, '', ''), 1]
+endfunction
+"}}}
+function! s:func._solve_whitespace(pat) "{{{
+  let i = index(self.args, a:pat, self._first)
+  if i==-1 || i > self._last
+    return ['', 0]
+  end
+  call self._adjust_ranges()
+  if self.__take_val && i <= self._last
+    let next = self.args[i+1]
+    if next !~ '^\%('. self._longoptbgn. '\|'. self._shortoptbgn. '\)'
+      let optval = self.args[i+1]
+      unlet self.args[i : i+1]
+      call self._adjust_ranges()
+      return [optval, 1]
+    end
+  end
+  unlet self.args[i]
+  return [1, 1]
+endfunction
+"}}}
+
 
 "=============================================================================
 "Main:
@@ -287,8 +332,15 @@ function! lim#cmddef#newCmdParser(args, ...) "{{{
   let behavior = a:0 ? a:1 : {}
   let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
   let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
-  let obj.assignpat = get(behavior, 'assignpat', '=')
-  let obj.endpat = '\%('. obj.assignpat. '\(.*\)\)\?$'
+  let obj.assign = get(behavior, 'assign', '=')
+  if obj.assign=~'\s'
+    let obj._solve_longopt = s:func._solve_whitespace
+    let obj._solve_shortopt = s:func._solve_whitespace
+  else
+    let obj._endpat = '\%('. obj.assign. '\(.*\)\)\?$'
+    let obj._solve_longopt = s:func._solve_longopt_nomal
+    let obj._solve_shortopt = s:func._solve_shortopt_normal
+  end
   let obj.args = a:args
   let obj.args_original = copy(a:args)
   return obj
@@ -331,37 +383,38 @@ function! s:CmdParser.parse_options(optdict, ...) "{{{
   let self._last = self._last < 0 ? len(self.args) + self._last : self._last
   let ret = {}
   for [key, vals] in items(a:optdict)
-    let ret[key] = self._get_optval(self._get_optval_evalset(vals, key))
+    let ret[key] = self._get_optval(self._interpret_optdict_elms(vals, self._longoptbgn. key))
     unlet vals
   endfor
   return ret
 endfunction
 "}}}
 
-function! s:CmdParser._get_optval_evalset(vals, part_of_pats) "{{{
-  let [default, pats, invertpats] = [0, [self._longoptbgn. a:part_of_pats], []]
+function! s:CmdParser._interpret_optdict_elms(vals, pat) "{{{
+  let [default, pats, invertpats, take_val] = [0, [a:pat], [], 1]
   if type(a:vals) != s:TYPE_LIST
-    return [a:vals, pats, invertpats]
+    return [a:vals, pats, invertpats, take_val]
   end
   let types = map(copy(a:vals), 'type(v:val)')
-  if index(types, s:TYPE_LIST)==-1
-    return a:vals==[] ? [default, pats, invertpats] : types[0]== s:TYPE_STR ? [default, a:vals, invertpats] : [a:vals, pats, invertpats]
-  end
-  let [len, i, done_pats] = [len(a:vals), 0, 0]
+  let [len, i, done_pats, done_default] = [len(a:vals), 0, 0, 0]
   while i < len
     if types[i]==s:TYPE_LIST
-      exe 'let' (done_pats ? 'invertpats' : 'pats') '= a:vals[i]'
+      let {done_pats ? 'invertpats' : 'pats'} = a:vals[i]
       let done_pats = 1
-    else
+    elseif types[i]==s:TYPE_STR
       let default = a:vals[i]
+      let done_default = 1
+    else
+      let {done_default ? 'take_val' : 'default'} = a:vals[i]
+      let done_default = 1
     end
     let i += 1
   endwhile
-  return [default, pats, invertpats]
+  return [default, pats, invertpats, take_val]
 endfunction
 "}}}
-function! s:CmdParser._get_optval(optval_evalset) "{{{
-  let [default, optpats, invertpats] = a:optval_evalset
+function! s:CmdParser._get_optval(optdict_elms) "{{{
+  let [default, optpats, invertpats, self.__take_val] = a:optdict_elms
   if self._first<0
     return default
   end
@@ -382,29 +435,9 @@ endfunction
 "}}}
 function! s:CmdParser._solve_optpat(pat) "{{{
   if a:pat =~# '^'.self._longoptbgn || a:pat !~# '^'.self._shortoptbgn.'.$'
-    let i = match(self.args, '^'.a:pat. self.endpat, self._first)
-    if i!=-1 && i <= self._last
-      call self._adjust_ranges()
-      return [self._solve_optval(substitute(remove(self.args, i), '^'. a:pat, '', '')), 1]
-    end
-  else
-    let shortchr = matchstr(a:pat, '^'.self._shortoptbgn.'\zs.$')
-    let i = match(self.args, printf('^\%%(%s\)\@!\&^%s.\{-}%s.\{-}%s', self._longoptbgn, self._shortoptbgn, shortchr, self.endpat), self._first)
-    if i!=-1 && i <= self._last
-      let optval = matchstr(self.args[i], shortchr. '\zs'. self.assignpat.'.*$')
-      let self.args[i] = substitute(self.args[i], '^'. self._shortoptbgn.'.\{-}\zs'.shortchr. (optval=='' ? '' : self.assignpat.'.*'), '', '')
-      if self.args[i] ==# self._shortoptbgn
-        unlet self.args[i]
-        call self._adjust_ranges()
-      end
-      return [self._solve_optval(optval), 1]
-    end
+    return self._solve_longopt(a:pat)
   end
-  return ['', 0]
-endfunction
-"}}}
-function! s:CmdParser._solve_optval(optval) "{{{
-  return a:optval=='' ? 1 : matchstr(a:optval, '^'. self.assignpat. '\zs.*')
+  return self._solve_shortopt(a:pat)
 endfunction
 "}}}
 function! s:CmdParser._adjust_ranges() "{{{
@@ -414,6 +447,7 @@ function! s:CmdParser._adjust_ranges() "{{{
   let self._last -= 1
 endfunction
 "}}}
+
 function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
   let i = a:bgnidx
   while i < self._len
