@@ -207,6 +207,14 @@ function! s:Cmdcmpl.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.inputs)
 endfunction
 "}}}
+function! s:Cmdcmpl.get_list(pat, len) "{{{
+  if a:len < 1
+    return []
+  end
+  let idx = match(self.inputs, a:pat)
+  return idx==-1 ? [] : self.inputs[idx : idx+ a:len-1]
+endfunction
+"}}}
 function! s:Cmdcmpl.matches(pat) "{{{
   return s:_matches(a:pat, copy(self.inputs))
 endfunction

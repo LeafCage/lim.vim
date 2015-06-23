@@ -114,10 +114,17 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	{listidx}が指定された場合、マッチした結果からそのindexの要素を返す。
 
 
+	Cmdcmpl.get_list({regexp}, {len})
+	コマンドライン全体を単語区切りで分割したリストから、正規表現{regexp}に
+	初めにマッチする単語から始まって長さが{len}の部分リストを返す。
+	マッチするものがないときには空リストを返す。長さ{len}分の要素が取得で
+	きなかったときには取得できたところまでの長さのリストを返す。
+
+
 	Cmdcmpl.matches({regexp})
 	Cmdcmpl.matches({list})
 	コマンドライン全体の単語から正規表現{regexp}にマッチしたもの全てをリス
-	トにして返す。{list}リストの場合、いずれかの要素に一致するもの全てを返
+	トにして返す。リスト{list}の場合、いずれかの要素に一致するもの全てを返
 	す。
 
 
