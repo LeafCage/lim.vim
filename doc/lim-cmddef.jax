@@ -21,19 +21,19 @@ lim#cmddef#split_into_words({str})	*lim#cmddef#split_into_words()*
 
 lim#cmddef#continuable()			*lim#cmddef#continuable()*
 lim#cmddef#continue()				*lim#cmddef#continue()*
-	|Cmdcmpl.esc_space()|と組み合わせて使う。
+	|Cmpl.esc_space()|と組み合わせて使う。
 	バックスラッシュでエスケープされた空白文字を含む単語を補完対象として扱
 	えるようにする。
 	Vim 7.3.615 以上のバージョンしかサポートしない場合や、補完候補に空白文
 	字を含まない場合は利用する必要はない。
 
 
-						*lim#cmddef#newCmdcmpl()*
-lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
+						*lim#cmddef#newCmpl()*
+lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	これはコマンド補完関数|:command-completion-customlist|内で利用し、コマ
 	ンド補完関数の引数 CmdLine と CursorPos を{cmdline} {cursorpos}に渡し
 	て使用する。
-	コマンド補完関数作成を補助するオブジェクトCmdcmplを返す。
+	コマンド補完関数作成を補助するオブジェクト Cmpl を返す。
 	省略可能な引数{behavior}は辞書であり、次のキーを持たせることができる。
 	--------~
 	longoptbgn		(文字列)
@@ -47,41 +47,41 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 		続けて複数を一度に指定することができる。
 
 	================~
-	Cmdcmplオブジェクトは以下の変数とメソッドを持つ。
+	Cmplオブジェクトは以下の変数とメソッドを持つ。
 	変数は変更可能だが、そうすると各メソッドの結果が変化するかもしれない。
 	--------~
-	Cmdcmpl.cmdline			(文字列)
+	Cmpl.cmdline			(文字列)
 		渡された引数{cmdline}に等しい。コマンドライン全体を表す。
 
-	Cmdcmpl.cursorpos		(数値)
+	Cmpl.cursorpos		(数値)
 		渡された引数{cursorpos}に等しい。カーソル位置(バイト単位のイン
 		デックス)を表す。コマンドライン先頭からカーソル位置までの文字
 		列長に等しい。
 
-	Cmdcmpl.arglead			(文字列)
+	Cmpl.arglead			(文字列)
 		補完対象の文字列。
 
-	Cmdcmpl.preword			(文字列)
+	Cmpl.preword			(文字列)
 		|arglead|の1つ前の入力文字列。
 
-	Cmdcmpl.inputs			(リスト)
+	Cmpl.inputs			(リスト)
 		既に入力されているコマンドライン文字列を引数ごとに区切ってリス
 		ト化したもの。
 
-	Cmdcmpl.command			(文字列)
+	Cmpl.command			(文字列)
 		入力されている文字列の内、コマンドにあたる部分。
 
 	--------~
-	Cmdcmpl.has_bang()
+	Cmpl.has_bang()
 	入力中のコマンドが !修飾子付きなら1、そうでなければ0を返す。
 
 
-	Cmdcmpl.count_lefts([{ignorepat}])
+	Cmpl.count_lefts([{ignorepat}])
 	行頭からカーソル位置までにいくつ完成した引数をそのコマンドが持ってるか
 	を返す。現在入力補完中の引数は数に含めない。1番目の引数を補完中なら、0
 	を返す。
 	{ignorepat}で指定されたパターンにマッチする引数は無視して数えられる。
-	{ignorepat}が指定されていない場合、|lim#cmddef#newCmdcmpl()|で初期化さ
+	{ignorepat}が指定されていない場合、|lim#cmddef#newCmpl()|で初期化さ
 	れた shortoptbgn か longoptbgn で始まり非空白文字が続くパターンが使わ
 	れる。 >
 		:Cmd --opt1 arg1 arg2
@@ -93,18 +93,18 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	self.argleadに一致する。
 
 
-	Cmdcmpl.should_optcmpl()
-	現在のArgleadが|lim#cmddef#newCmdcmpl()|で初期化された shortoptbgn
+	Cmpl.should_optcmpl()
+	現在のArgleadが|lim#cmddef#newCmpl()|で初期化された shortoptbgn
 	longoptbgn のパターンのいずれかマッチすれば1を返す。
 
 
-	Cmdcmpl.is_matched({pat})
+	Cmpl.is_matched({pat})
 	現在のArgleadがパターン{pat}にマッチすれば1を返す。
 
 
-	Cmdcmpl.get({idx}, [[{is-ignoreopt}], [{default}]])
-	Cmdcmpl.get({regexp}, [{default}])
-	Cmdcmpl.get({list}, [[{listidx}], [{default}]])
+	Cmpl.get({idx}, [[{is-ignoreopt}], [{default}]])
+	Cmpl.get({regexp}, [{default}])
+	Cmpl.get({list}, [[{listidx}], [{default}]])
 	コマンドライン全体の単語から一番初めにマッチした単語文字列を返す。マッ
 	チするものがなければ{default}(既定: "")を返す。
 	インデックス番号{idx} 正規表現{regexp} リスト{list}の3種類の指定ができ
@@ -114,23 +114,23 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	{listidx}が指定された場合、マッチした結果からそのindexの要素を返す。
 
 
-	Cmdcmpl.get_list({regexp}, {len})
+	Cmpl.get_list({regexp}, {len})
 	コマンドライン全体を単語区切りで分割したリストから、正規表現{regexp}に
 	初めにマッチする単語から始まって長さが{len}の部分リストを返す。
 	マッチするものがないときには空リストを返す。長さ{len}分の要素が取得で
 	きなかったときには取得できたところまでの長さのリストを返す。
 
 
-	Cmdcmpl.matches({regexp})
-	Cmdcmpl.matches({list})
+	Cmpl.matches({regexp})
+	Cmpl.matches({list})
 	コマンドライン全体の単語から正規表現{regexp}にマッチしたもの全てをリス
 	トにして返す。リスト{list}の場合、いずれかの要素に一致するもの全てを返
 	す。
 
 
-	Cmdcmpl.get_left({idx}, [[{ignoreopt}], [{default}]])
-	Cmdcmpl.get_left({regexp}, [{default}])
-	Cmdcmpl.get_left({list}, [{idx}, [{default}]])
+	Cmpl.get_left({idx}, [[{ignoreopt}], [{default}]])
+	Cmpl.get_left({regexp}, [{default}])
+	Cmpl.get_left({list}, [{idx}, [{default}]])
 	カーソルより左のコマンドラインの単語から一番初めにマッチした単語文字列
 	を返す。マッチするものがなければ{default}(既定: "")を返す。
 	インデックス番号{idx} 正規表現{regexp} リスト{list}の3種類の指定ができ
@@ -140,14 +140,14 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	{listidx}が指定された場合、マッチした結果からそのindexの要素を返す。
 
 
-	Cmdcmpl.match_lefts({regexp})
-	Cmdcmpl.match_lefts({list})
+	Cmpl.match_lefts({regexp})
+	Cmpl.match_lefts({list})
 	カーソルより左のコマンドラインの単語から正規表現{regexp}にマッチしたも
 	の全てをリストにして返す。{list}リストの場合、いずれかの要素に一致する
 	ものを全て返す。
 
 
-	Cmdcmpl.filtered({candidates})
+	Cmpl.filtered({candidates})
 	補完候補リスト{candidates}から、文脈に応じて不要なものを削除したリスト
 	を返す。文脈とは、既に入力されている文字列や補完対象の文字列(arglead)
 	などである。argleadに前方一致マッチする候補が使われる。
@@ -181,41 +181,44 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 	る。
 
 
-	Cmdcmpl.backward_filtered({candidates})
-	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく後方一致で絞
-	り込む。
+	Cmpl.backward_filtered({candidates})
+	|Cmpl.filtered()|と同じだが arglead に前方一致ではなく後方一致で絞り込
+	む。
 
 
-	Cmdcmpl.partial_filtered({candidates})
-	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく部分一致で絞
-	り込む。
+	Cmpl.partial_filtered({candidates})
+	|Cmpl.filtered()|と同じだが arglead に前方一致ではなく部分一致で絞り込
+	む。
 
 
-	Cmdcmpl.exact_filtered({candidates})
-	|Cmdcmpl.filtered()|と同じだが arglead に前方一致ではなく完全一致で絞
-	り込む。
+	Cmpl.exact_filtered({candidates})
+	|Cmpl.filtered()|と同じだが arglead に前方一致ではなく完全一致で絞り込
+	む。
 
 
-	Cmdcmpl.esc_space({filtered-candidates})
-	NOTE:	この関数は必ず補完関数の処理の最後、return の直前で呼ぶこと。
-		この関数の後に処理を続けてはいけない。
+	Cmpl.esc_space({filtered-candidates})
+	NOTE:
+	- この関数は必ず補完関数の処理の最後、return の直前で呼ぶこと。この関
+	  数の後に処理を続けてはいけない。
+	- Vim 7.3.615 以上のバージョンしかサポートしない場合や、補完候補に空白
+	  文字を含まない場合は利用する必要はない。
+
 	Vim 7.3.615 より前のバージョンの Vim のコマンドライン補完はバックスラ
 	ッシュでエスケープされた空白文字を認識できず、例えば "Cmd foo\ ba" で
 	補完を開始した場合の補完対象 ArgLead は "foo\ ba" ではなく、"ba" だけ
 	になってしまい、文字列の置き換えもこの部分だけを対象にしてしまう。
-	Cmdcmpl の arglead はバックスラッシュでエスケープされている空白文字を
+	Cmpl の arglead はバックスラッシュでエスケープされている空白文字を
 	認識するが、バックスラッシュでエスケープされている空白文字を含めた単語
-	を補完対象にするためにはこの関数|Cmdcmpl.esc_space()|を
-	補完関数の最後に呼んだ上で、補完関数の最初で|lim#cmddef#continue()|を
-	呼ぶ必要がある。{filtered-candidates}は、その補完関数が返す予定の補完
-	候補リストである。 >
+	を補完対象にするためにはこの関数|Cmpl.esc_space()|を補完関数の最後に呼
+	んだ上で、補完関数の最初で|lim#cmddef#continue()|を呼ぶ必要がある。
+	{filtered-candidates}は、その補完関数が返す予定の補完候補リストである。 >
 	    command! -nargs=* -complete=customlist,Cmpl Example :echo <q-args>
 
 	    function! Cmpl(arglead, cmdline, crsrpos)
 	      if lim#cmddef#continuable()
 	        return lim#cmddef#continue()
 	      endif
-	      let cmpl = lim#cmddef#newCmdcmpl(a:cmdline, a:crsrpos)
+	      let cmpl = lim#cmddef#newCmpl(a:cmdline, a:crsrpos)
 	      return cmpl.esc_space(cmpl.filtered(['foo\ bar', 'foo\ baz']))
 	    endfunction
 <	この Example コマンドの補完を "Example foo\ ba" まで入力した状態で呼ぶ
@@ -224,9 +227,9 @@ lim#cmddef#newCmdcmpl({cmdline}, {cursorpos}, [{behavior}])
 
 
 
-						*lim#cmddef#newCmdParser()*
-lim#cmddef#newCmdParser({args}, [{behavior}])
-	コマンド実行時に渡された引数を解釈するパーサ CmdParser を返す。
+						*lim#cmddef#newParser()*
+lim#cmddef#newParser({args}, [{behavior}])
+	コマンド実行時に渡された引数を解釈するパーサ Parser を返す。
 	{args}はコマンド引数を単語で区切ってリスト化させたものである。必要に応
 	じて|lim#cmddef#split_into_words()|を使用すると良い。
 	省略可能な引数{behavior}は辞書であり、次のキーを持たせることができる。
@@ -244,23 +247,23 @@ lim#cmddef#newCmdParser({args}, [{behavior}])
 	assign		(文字列)
 		既定値: "="
 		値を取るオプションが利用する代入記号。
-		空白文字にした場合、CmdParser.parse_options() の挙動が変化する
+		空白文字にした場合、Parser.parse_options() の挙動が変化する
 		。
 
 	================~
-	CmdParser オブジェクトは以下の変数とメソッドを持つ。
+	Parser オブジェクトは以下の変数とメソッドを持つ。
 	--------~
-	CmdParser.args			(リスト)
+	Parser.args			(リスト)
 		初期化時に渡されたコマンドライン引数リスト{args}。後記のメソッ
 		ドの副作用で幾つかの要素が削除されるかもしれない。
 
-	CmdParser.args_original		(リスト)
+	Parser.args_original		(リスト)
 		初期化時に渡されたままの args。args と違ってメソッドの副作用を
 		受けない。
 	--------~
-	CmdParser.get({idx}, [[{is-ignoreopt}], [{default}]])
-	CmdParser.get({regexp}, [{default}])
-	CmdParser.get({list}, [[{listidx}], [{default}]])
+	Parser.get({idx}, [[{is-ignoreopt}], [{default}]])
+	Parser.get({regexp}, [{default}])
+	Parser.get({list}, [[{listidx}], [{default}]])
 	コマンドライン引数から一番初めにマッチした単語文字列を返す。マッチする
 	ものがなければ{default}(既定: "")を返す。
 	インデックス番号{idx} 正規表現{regexp} リスト{list}の3種類の指定ができ
@@ -270,12 +273,12 @@ lim#cmddef#newCmdParser({args}, [{behavior}])
 	{listidx}が指定された場合、マッチした結果からそのindexの要素を返す。
 
 
-	CmdParser.matches({pat})
+	Parser.matches({pat})
 	コマンドライン引数から{pat}にマッチしたもの全てをリストにして返す。
 	{pat}がリストの場合、いずれかの要素に一致するもの全てを返す。
 
 
-	CmdParser.divide({pat}, [{way}])
+	Parser.divide({pat}, [{way}])
 	パターン{pat}に従って複数のグループに分割した args を返す。分割のやり
 	方{way}には "start" "sep" "stop" のいずれかを指定する (既定: "sep")。
 	"start" の場合はパターン{pat}にマッチした要素を新しいグループの始まり
@@ -284,7 +287,7 @@ lim#cmddef#newCmdParser({args}, [{behavior}])
 	、パターン{pat}を分割グループの終点とする。
 
 
-	CmdParser.filter({string}, [{scope}])
+	Parser.filter({string}, [{scope}])
 	{string}は|filter()|で使われるフィルタパターンと同じである。
 	args から {string} の評価が 0 の要素を取り除く (v:val にはargs の各要
 	素が代入される)。{string}の中で関数ローカル変数を使いたい場合には、
@@ -292,8 +295,8 @@ lim#cmddef#newCmdParser({args}, [{behavior}])
 	args を返す。
 
 
-	CmdParser.parse_options({optdict}, [{idx}])
-	CmdParser.parse_options({optdict}, [{range}])
+	Parser.parse_options({optdict}, [{idx}])
+	Parser.parse_options({optdict}, [{range}])
 	どのようなオプション引数が使われたのかを解釈する。args の各要素から
 	{optdict}で指定されたパターンにマッチするものを評価し、オプション引数
 	として評価された要素は args から取り除かれる。
@@ -308,8 +311,8 @@ lim#cmddef#newCmdParser({args}, [{behavior}])
 	そのあとでリストで見つかった 0 か 1 か 2 の数値はそのオプションが値を
 	受け取れるかどうかを示す。0 だと受け取れない、1 だと受け取ることができ
 	る。 2 だと必須である。省略されると 1 と見なされる。
-		NOTE |lim#cmddef#newCmdParser()|の{behavior}.assign が空白文字
-		の場合、引数を取りたくなければ 0 に設定する必要がある。
+		NOTE |lim#cmddef#newParser()|の{behavior}.assign が空白文字の
+		場合、引数を取りたくなければ 0 に設定する必要がある。
 	リストの中で初めに見つかった文字列のリストは引数のパターンを示す。文字
 	列のリストのいずれかに先頭マッチしたらそれはこのオプションであると見な
 	される。省略されると辞書{optdict}のキー(オプション名)の頭に longoptbgn

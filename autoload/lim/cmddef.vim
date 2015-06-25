@@ -196,9 +196,9 @@ function! lim#cmddef#continue() "{{{
 endfunction
 "}}}
 
-let s:Cmdcmpl = {}
-function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
-  let obj = copy(s:Cmdcmpl)
+let s:Cmpl = {}
+function! lim#cmddef#newCmpl(cmdline, cursorpos, ...) abort "{{{
+  let obj = copy(s:Cmpl)
   let behavior = a:0 ? a:1 : {}
   let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
   let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
@@ -213,17 +213,17 @@ function! lim#cmddef#newCmdcmpl(cmdline, cursorpos, ...) abort "{{{
   return obj
 endfunction
 "}}}
-let s:Cmdcmpl._get_optignorepat = s:func._get_optignorepat
-let s:Cmdcmpl._get_arg = s:func._get_arg
-function! s:Cmdcmpl.get_arglead() "{{{
+let s:Cmpl._get_optignorepat = s:func._get_optignorepat
+let s:Cmpl._get_arg = s:func._get_arg
+function! s:Cmpl.get_arglead() "{{{
   return self.arglead
 endfunction
 "}}}
-function! s:Cmdcmpl.has_bang() "{{{
+function! s:Cmpl.has_bang() "{{{
   return self.command =~ '!$'
 endfunction
 "}}}
-function! s:Cmdcmpl.count_lefts(...) "{{{
+function! s:Cmpl.count_lefts(...) "{{{
   let NULL = "\<C-n>"
   let ignorepat = a:0 ? a:1 : self._get_optignorepat()
   let ignorepat = ignorepat=='' ? NULL : ignorepat
@@ -239,20 +239,20 @@ function! s:Cmdcmpl.count_lefts(...) "{{{
   return self._save_leftargscnt[ignorepat]
 endfunction
 "}}}
-function! s:Cmdcmpl.should_optcmpl() "{{{
+function! s:Cmpl.should_optcmpl() "{{{
   let pat = '^'.self._shortoptbgn.'\|^'.self._longoptbgn
   return pat!='^\|^' && self.arglead =~# pat
 endfunction
 "}}}
-function! s:Cmdcmpl.is_matched(pat) "{{{
+function! s:Cmpl.is_matched(pat) "{{{
   return self.arglead =~# a:pat
 endfunction
 "}}}
-function! s:Cmdcmpl.get(pat, ...) "{{{
+function! s:Cmpl.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.inputs)
 endfunction
 "}}}
-function! s:Cmdcmpl.get_list(pat, len) "{{{
+function! s:Cmpl.get_list(pat, len) "{{{
   if a:len < 1
     return []
   end
@@ -260,25 +260,25 @@ function! s:Cmdcmpl.get_list(pat, len) "{{{
   return idx==-1 ? [] : self.inputs[idx : idx+ a:len-1]
 endfunction
 "}}}
-function! s:Cmdcmpl.matches(pat) "{{{
+function! s:Cmpl.matches(pat) "{{{
   return s:_matches(a:pat, copy(self.inputs))
 endfunction
 "}}}
-function! s:Cmdcmpl.get_left(pat, ...) "{{{
+function! s:Cmpl.get_left(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.leftwords)
 endfunction
 "}}}
-function! s:Cmdcmpl.match_lefts(pat) "{{{
+function! s:Cmpl.match_lefts(pat) "{{{
   return s:_matches(a:pat, copy(self.leftwords))
 endfunction
 "}}}
-function! s:Cmdcmpl._filtered_by_inputs(candidates) "{{{
+function! s:Cmpl._filtered_by_inputs(candidates) "{{{
   let assorter = s:newAssorter(self.inputs)
   call assorter.assort_candidates(a:candidates)
   return assorter.remove_del_grouped_candidates()
 endfunction
 "}}}
-function! s:Cmdcmpl.filtered(candidates) "{{{
+function! s:Cmpl.filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
   let pat = '^\V'. escape(self.arglead, '\')
   if self.arglead=~'\s'
@@ -287,7 +287,7 @@ function! s:Cmdcmpl.filtered(candidates) "{{{
   return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
-function! s:Cmdcmpl.backward_filtered(candidates) "{{{
+function! s:Cmpl.backward_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
   let pat = '\V'. escape(self.arglead, '\'). '\$'
   if self.arglead=~'\s'
@@ -296,7 +296,7 @@ function! s:Cmdcmpl.backward_filtered(candidates) "{{{
   return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
-function! s:Cmdcmpl.partial_filtered(candidates) "{{{
+function! s:Cmpl.partial_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
   let pat = '\V'. escape(self.arglead, '\')
   if self.arglead=~'\s'
@@ -305,12 +305,12 @@ function! s:Cmdcmpl.partial_filtered(candidates) "{{{
   return filter(candidates, 'v:val =~ pat')
 endfunction
 "}}}
-function! s:Cmdcmpl.exact_filtered(candidates) "{{{
+function! s:Cmpl.exact_filtered(candidates) "{{{
   let candidates = self._filtered_by_inputs(a:candidates)
   return filter(candidates, 'v:val == self.arglead')
 endfunction
 "}}}
-function! s:Cmdcmpl.esc_space(filtered_candidates) "{{{
+function! s:Cmpl.esc_space(filtered_candidates) "{{{
   if self.arglead !~ '\s' || a:filtered_candidates==[] || v:version > 703 || v:version==703 && has('patch615')
     return a:filtered_candidates
   end
@@ -326,9 +326,9 @@ endfunction
 
 
 "--------------------------------------
-let s:CmdParser = {}
-function! lim#cmddef#newCmdParser(args, ...) "{{{
-  let obj = copy(s:CmdParser)
+let s:Parser = {}
+function! lim#cmddef#newParser(args, ...) "{{{
+  let obj = copy(s:Parser)
   let behavior = a:0 ? a:1 : {}
   let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
   let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
@@ -346,29 +346,29 @@ function! lim#cmddef#newCmdParser(args, ...) "{{{
   return obj
 endfunction
 "}}}
-let s:CmdParser._get_optignorepat = s:func._get_optignorepat
-let s:CmdParser._get_arg = s:func._get_arg
-function! s:CmdParser.get(pat, ...) "{{{
+let s:Parser._get_optignorepat = s:func._get_optignorepat
+let s:Parser._get_arg = s:func._get_arg
+function! s:Parser.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.args)
 endfunction
 "}}}
-function! s:CmdParser.matches(pat) "{{{
+function! s:Parser.matches(pat) "{{{
   return s:_matches(a:pat, copy(self.args))
 endfunction
 "}}}
-function! s:CmdParser.divide(pat, ...) "{{{
+function! s:Parser.divide(pat, ...) "{{{
   let way = a:0 ? a:1 : 'sep'
   let self._len = len(self.args)
   try
     let ret = self['_divide_'. way](a:pat)
   catch /E716/
-    echoerr 'CmdParser: invalid way > "'. way. '"'
+    echoerr 'Parser: invalid way > "'. way. '"'
     return self.arg
   endtry
   return ret==[[]] ? [] : ret
 endfunction
 "}}}
-function! s:CmdParser.filter(pat, ...) "{{{
+function! s:Parser.filter(pat, ...) "{{{
   let __cmpparser_args__ = self.args
   if a:0
     for __cmpparser_key__ in keys(a:1)
@@ -378,7 +378,7 @@ function! s:CmdParser.filter(pat, ...) "{{{
   return filter(__cmpparser_args__, a:pat)
 endfunction
 "}}}
-function! s:CmdParser.parse_options(optdict, ...) "{{{
+function! s:Parser.parse_options(optdict, ...) "{{{
   let [self._first, self._last] = a:0 ? type(a:1)==s:TYPE_LIST ? a:1 : [a:1, a:1] : [0, -1]
   let self._last = self._last < 0 ? len(self.args) + self._last : self._last
   let ret = {}
@@ -390,7 +390,7 @@ function! s:CmdParser.parse_options(optdict, ...) "{{{
 endfunction
 "}}}
 
-function! s:CmdParser._interpret_optdict_elms(vals, pat) "{{{
+function! s:Parser._interpret_optdict_elms(vals, pat) "{{{
   let [default, pats, invertpats, take_val] = [0, [a:pat], [], 1]
   if type(a:vals) != s:TYPE_LIST
     return [a:vals, pats, invertpats, take_val]
@@ -413,7 +413,7 @@ function! s:CmdParser._interpret_optdict_elms(vals, pat) "{{{
   return [default, pats, invertpats, take_val]
 endfunction
 "}}}
-function! s:CmdParser._get_optval(optdict_elms) "{{{
+function! s:Parser._get_optval(optdict_elms) "{{{
   let [default, optpats, invertpats, self.__take_val] = a:optdict_elms
   if self._first<0
     return default
@@ -433,14 +433,14 @@ function! s:CmdParser._get_optval(optdict_elms) "{{{
   return default
 endfunction
 "}}}
-function! s:CmdParser._solve_optpat(pat) "{{{
+function! s:Parser._solve_optpat(pat) "{{{
   if a:pat =~# '^'.self._longoptbgn || a:pat !~# '^'.self._shortoptbgn.'.$'
     return self._solve_longopt(a:pat)
   end
   return self._solve_shortopt(a:pat)
 endfunction
 "}}}
-function! s:CmdParser._adjust_ranges() "{{{
+function! s:Parser._adjust_ranges() "{{{
   if self._first == self._last
     let self._first -= 1
   end
@@ -448,7 +448,7 @@ function! s:CmdParser._adjust_ranges() "{{{
 endfunction
 "}}}
 
-function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
+function! s:Parser._get_firstmatch_idx(patlist, bgnidx) "{{{
   let i = a:bgnidx
   while i < self._len
     if index(a:patlist, self.args[i])!=-1
@@ -459,7 +459,7 @@ function! s:CmdParser._get_firstmatch_idx(patlist, bgnidx) "{{{
   return -1
 endfunction
 "}}}
-function! s:CmdParser._divide_start(pat) "{{{
+function! s:Parser._divide_start(pat) "{{{
   let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i+1)' : 'match(self.args, a:pat, i+1)'
   let ret = []
   let i = 0
@@ -473,7 +473,7 @@ function! s:CmdParser._divide_start(pat) "{{{
   return ret
 endfunction
 "}}}
-function! s:CmdParser._divide_sep(pat) "{{{
+function! s:Parser._divide_sep(pat) "{{{
   let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i)' : 'match(self.args, a:pat, i)'
   let ret = []
   let i = 0
@@ -491,7 +491,7 @@ function! s:CmdParser._divide_sep(pat) "{{{
   return ret
 endfunction
 "}}}
-function! s:CmdParser._divide_stop(pat) "{{{
+function! s:Parser._divide_stop(pat) "{{{
   let expr = type(a:pat)==s:TYPE_LIST ? 'self._get_firstmatch_idx(a:pat, i)' : 'match(self.args, a:pat, i)'
   let ret = []
   let i = 0
