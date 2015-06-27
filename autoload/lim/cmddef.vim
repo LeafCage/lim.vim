@@ -252,7 +252,7 @@ function! s:Cmpl.get(pat, ...) "{{{
   return self._get_arg(a:pat, a:000, self.inputs)
 endfunction
 "}}}
-function! s:Cmpl.get_list(pat, len) "{{{
+function! s:Cmpl.get_parts(pat, len) "{{{
   if a:len < 1
     return []
   end

@@ -114,7 +114,7 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	{listidx}が指定された場合、マッチした結果からそのindexの要素を返す。
 
 
-	Cmpl.get_list({regexp}, {len})
+	Cmpl.get_parts({regexp}, {len})
 	コマンドライン全体を単語区切りで分割したリストから、正規表現{regexp}に
 	初めにマッチする単語から始まって長さが{len}の部分リストを返す。
 	マッチするものがないときには空リストを返す。長さ{len}分の要素が取得で
