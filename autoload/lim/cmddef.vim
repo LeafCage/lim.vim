@@ -310,7 +310,7 @@ function! s:Cmpl.exact_filtered(candidates) "{{{
   return filter(candidates, 'v:val == self.arglead')
 endfunction
 "}}}
-function! s:Cmpl.esc_space(filtered_candidates) "{{{
+function! s:Cmpl.hail_space(filtered_candidates) "{{{
   if self.arglead !~ '\s' || a:filtered_candidates==[] || v:version > 703 || v:version==703 && has('patch615')
     return a:filtered_candidates
   end

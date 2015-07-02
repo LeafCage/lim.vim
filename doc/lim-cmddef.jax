@@ -21,7 +21,7 @@ lim#cmddef#split_into_words({str})	*lim#cmddef#split_into_words()*
 
 lim#cmddef#continuable()			*lim#cmddef#continuable()*
 lim#cmddef#continue()				*lim#cmddef#continue()*
-	|Cmpl.esc_space()|と組み合わせて使う。
+	|Cmpl.hail_space()|と組み合わせて使う。
 	バックスラッシュでエスケープされた空白文字を含む単語を補完対象として扱
 	えるようにする。
 	Vim 7.3.615 以上のバージョンしかサポートしない場合や、補完候補に空白文
@@ -196,7 +196,7 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	む。
 
 
-	Cmpl.esc_space({filtered-candidates})
+	Cmpl.hail_space({filtered-candidates})
 	NOTE:
 	- この関数は必ず補完関数の処理の最後、return の直前で呼ぶこと。この関
 	  数の後に処理を続けてはいけない。
@@ -209,8 +209,8 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	になってしまい、文字列の置き換えもこの部分だけを対象にしてしまう。
 	Cmpl の arglead はバックスラッシュでエスケープされている空白文字を
 	認識するが、バックスラッシュでエスケープされている空白文字を含めた単語
-	を補完対象にするためにはこの関数|Cmpl.esc_space()|を補完関数の最後に呼
-	んだ上で、補完関数の最初で|lim#cmddef#continue()|を呼ぶ必要がある。
+	を補完対象にするためにはこの関数|Cmpl.hail_space()|を補完関数の最後に
+	呼んだ上で、補完関数の最初で|lim#cmddef#continue()|を呼ぶ必要がある。
 	{filtered-candidates}は、その補完関数が返す予定の補完候補リストである。 >
 	    command! -nargs=* -complete=customlist,Cmpl Example :echo <q-args>
 
@@ -219,7 +219,7 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	        return lim#cmddef#continue()
 	      endif
 	      let cmpl = lim#cmddef#newCmpl(a:cmdline, a:crsrpos)
-	      return cmpl.esc_space(cmpl.filtered(['foo\ bar', 'foo\ baz']))
+	      return cmpl.hail_space(cmpl.filtered(['foo\ bar', 'foo\ baz']))
 	    endfunction
 <	この Example コマンドの補完を "Example foo\ ba" まで入力した状態で呼ぶ
 	と、"foo\ ba" までが補完対象になり、"foo\ bar" "foo\ baz" が補完候補と
