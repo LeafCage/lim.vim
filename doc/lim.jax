@@ -130,6 +130,14 @@ lim#misc#expand_keycodes({str})			*lim#misc#expand_keycodes()*
 	える。|lim#keynotation#decode()|の逆バージョンと言える。
 
 
+lim#misc#get_emptybufnr([{ignore-buf-list}])	*lim#misc#get_emptybufnr()*
+	バッファリストのバッファの中から空のバッファ(バッファ名がなく、空文字
+	しか入力されていないバッファ)の番号を返す。
+	該当するバッファがなければ 0 を返す。
+	リスト{ignore-buf-list}に除外したいバッファ番号を定義して渡すと、その
+	バッファ番号のバッファは検索対象から外す。
+
+
 lim#misc#get_cmdresults({cmd})			*lim#misc#get_cmdresults()*
 	EXコマンド|ex-cmd-index|のうち、結果をコマンドライン域に表示するコマン
 	ドを文字列で{cmd}に指定する。結果が文字列のリストとなって返却される。

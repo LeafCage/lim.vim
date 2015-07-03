@@ -78,6 +78,20 @@ function! lim#misc#expand_keycodes(str) "{{{
   return substitute(a:str, '<\S\{-1,}>', '\=eval(''"\''. submatch(0). ''"'')', 'g')
 endfunction
 "}}}
+function! lim#misc#get_emptybufnr(...) "{{{
+  let targnrs = range(bufnr('$'), 1, -1)
+  if a:0
+    let ignore_bufs = a:1
+    call filter(targnrs, 'index(ignore_bufs, v:val)==-1')
+  end
+  for n in targnrs
+    if bufname(n)=='' && match(getbufline(n, 1, '$'), '\S')==-1
+      return n
+    end
+  endfor
+  return 0
+endfunction
+"}}}
 
 
 function! lim#misc#get_cmdresults(cmd) "{{{
