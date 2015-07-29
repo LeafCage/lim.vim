@@ -15,6 +15,7 @@ License : [NYSL](http://www.kmonos.net/nysl/index.en.html)
   cap				  |lim-modules-cap|
   silo				  |lim-modules-silo|
   keynotation			  |lim-modules-keynotation|
+  typeset			  |lim-modules-typeset|
   misc				  |lim-modules-misc|
 コマンド			 |lim-commands|
 
@@ -108,6 +109,23 @@ lim#keynotation#decode({str})			*lim#keynotation#decode()*
 
 
 ------------------------------------------------------------------------------
+lim-modules-typeset				*lim-modules-typeset*
+文字列のレイアウトを整えるときに有用なモジュール。詳細は|lim-typeset|参照。
+
+lim#typeset#fit_str_into_width()
+lim#typeset#fit_str_into_width8()
+	文字列が指定した幅よりも少なければ空白文字で埋め、多ければ切り詰める。
+
+lim#typeset#trancate_to_width()
+lim#typeset#trancate_to_width8()
+	文字列を指定した幅まで切り詰める。
+
+lim#typeset#keep_interval()
+lim#typeset#keep_interval8()
+	2つの文字列をいい感じに間隔を空けて繋げる。
+
+
+======================================
 lim-modules-misc				*lim-modules-misc*
 
 汎用のモジュールを提供する。

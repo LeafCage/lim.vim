@@ -1,0 +1,115 @@
+*lim-typeset.txt*	文字列のレイアウトを整える
+*lim-typeset*
+
+==============================================================================
+概要						*lim-typeset-introduction*
+
+文字列のレイアウトを整えるときに有用なモジュール。
+
+
+==============================================================================
+インターフェイス				*lim-typeset-interface*
+
+					*lim#typeset#fit_str_into_width()*
+lim#typeset#fit_str_into_width({str}, {width}, [{align}])
+	文字列{str}を幅{width}にして返す。超過した文字列は末尾から切り詰められ
+	、不足した幅は空白文字で埋められる。
+	空白文字で埋められる際、{align}が "l" "left" だと左寄せ(既定)、
+	"r" "right"だと右寄せにする。
+	タブ文字の幅は 1 としてカウントされる。
+
+	- Example: >
+	echo lim#typeset#fit_str_into_width('あいうえお かきくけこ', 14)
+	"=> 'あいうえお か '
+	echo lim#typeset#fit_str_into_width('あいうえお かきくけこ', 14, 'r')
+	"=> ' あいうえお か'
+	echo lim#typeset#fit_str_into_width('あいうえお かきくけこ', 30)
+	"=> 'あいうえお かきくけこ         '
+	echo lim#typeset#fit_str_into_width('あいうえお かきくけこ', 30, 'r')
+	"=> '         あいうえお かきくけこ'
+
+
+<					*lim#typeset#fit_str_into_width8()*
+lim#typeset#fit_str_into_width8({str}, {width}, [{align}])
+	|lim#typeset#fit_str_into_width()|と似ているがタブ文字はスクリーン上で
+	の表示幅を考慮する。
+
+
+					*lim#typeset#trancate_to_width()*
+lim#typeset#trancate_to_width({str}, {width})
+	文字列{str}を幅{width}に収まるように超過分を切り詰める。
+	タブ文字の幅は 1 としてカウントされる。
+
+
+					*lim#typeset#trancate_to_width8()*
+lim#typeset#trancate_to_width8({str}, {width})
+	|lim#typeset#trancate_to_width()|と似ているがタブ文字はスクリーン上で
+	の表示幅を考慮する。
+
+
+					*lim#typeset#keep_interval()*
+lim#typeset#keep_interval([[{base-interval},] {min-lv},] {strlist},
+		[{limit-width}, [{over}]])
+	リスト{strlist}の要素は通常2つであり、これを {str1}, {str2} とする。
+	文字列{str1}にいくつかの空白を挟んで文字列{str2}を連結する。結果の文字
+	列を返す。
+	{str1}は文字列の代わりに{str1}の文字幅を表す数値であってもよい。その場
+	合、{str2}の前に付与される空白文字と、調整された{str2}を繋げた文字列が
+	返される。
+	リスト{strlist}に3つめの要素として、数値{min-interval}を渡してもよい。
+	これは最低間隔である。{str1}の長さとの兼ね合いで現在のレベルでは最低の
+	間隔が確保できなければ間隔のレベルを 1 上昇させる。既定値は 2 である。
+	すなわち、2つのスペースを最低限確保しようとする。
+
+	引数{base-interval}は基礎とする間隔。間隔の1レベルはこの数値分である。
+	間隔が足りないときレベルが1上がり、この数値分間隔が足される。通常は 8
+	が使用される。これはつまり8個のスペースである。
+	{min-lv}は間隔の最低レベルであり既定値は 1 である。
+	{limit-width}が設定されていると文字列全体の長さをこの長さに収めようと
+	する。収まりきらないとき、挿入する空白文字を最低間隔{min-interval}まで
+	減らして調整する。それでも収まりきらなかった部分はそのまま残される。
+	既定値は 0 であり、これは無制限である。
+	文字列{over}が "chop" だと超過した分は末尾から取り除かれる。
+
+	- Example: >
+	echo lim#typeset#keep_interval(['abcd', 'xyz'])
+	"=> 'abcd    xyz'
+	echo lim#typeset#keep_interval(['abcdef', 'xyz'])
+	"=> 'abcdef  xyz'
+	echo lim#typeset#keep_interval(['abcdefg', 'xyz'])
+	"=> 'abcdefg         xyz'
+
+	echo lim#typeset#keep_interval([4, 'xyz'])
+	"=> '    xyz'
+	echo lim#typeset#keep_interval([6, 'xyz'])
+	"=> '  xyz'
+	echo lim#typeset#keep_interval([7, 'xyz'])
+	"=> '         xyz'
+
+	echo lim#typeset#keep_interval(['abcd', 'xyz'])
+	"=> 'abcd    xyz'
+	echo lim#typeset#keep_interval(['abcd', 'xyz', 5])
+	"=> 'abcd            xyz'
+
+	echo lim#typeset#keep_interval(6, 1, ['abcd', 'xyz'])
+	"=> 'abcd  xyz'
+	echo lim#typeset#keep_interval(6, 2, ['abcd', 'xyz'])
+	"=> 'abcd        xyz'
+	echo lim#typeset#keep_interval(6, 3, ['abcd', 'xyz'])
+	"=> 'abcd              xyz'
+
+	echo lim#typeset#keep_interval(['abcdef', 'vwxyz'], 10)
+	"=> 'abcdef  vwxyz'
+	echo lim#typeset#keep_interval(['abcdef', 'vwxyz'], 10, 'chop')
+	"=> 'abcdef  vw'
+
+
+<					*lim#typeset#keep_interval8()*
+lim#typeset#keep_interval8([[{base-interval},] {min-lv},] {strlist},
+		[{limit-width}, [{over}]])
+	|lim#typeset#keep_interval()|と似ているがタブ文字はスクリーン上での表
+	示幅を考慮する。
+
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:fen:
