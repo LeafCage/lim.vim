@@ -210,15 +210,12 @@ function! lim#cmddef#newCmpl(cmdline, cursorpos, ...) abort "{{{
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
   let obj._save_leftargscnt = {}
+  let obj._save_argscnt = {}
   return obj
 endfunction
 "}}}
 let s:Cmpl._get_optignorepat = s:func._get_optignorepat
 let s:Cmpl._get_arg = s:func._get_arg
-function! s:Cmpl.get_arglead() "{{{
-  return self.arglead
-endfunction
-"}}}
 function! s:Cmpl.has_bang() "{{{
   return self.command =~ '!$'
 endfunction
@@ -237,6 +234,22 @@ function! s:Cmpl.count_lefts(...) "{{{
   let ret = len(leftwords)
   let self._save_leftargscnt[ignorepat] = self._is_on_edge ? ret : ret-1
   return self._save_leftargscnt[ignorepat]
+endfunction
+"}}}
+function! s:Cmpl.count_inputted(...) "{{{
+  let NULL = "\<C-n>"
+  let ignorepat = a:0 ? a:1 : self._get_optignorepat()
+  let ignorepat = ignorepat=='' ? NULL : ignorepat
+  if has_key(self._save_argscnt, ignorepat)
+    return self._save_argscnt[ignorepat]
+  end
+  let inputs = copy(self.inputs)
+  if ignorepat != NULL
+    call filter(inputs, 'v:val !~# ignorepat')
+  end
+  let ret = len(inputs)
+  let self._save_argscnt[ignorepat] = self._is_on_edge ? ret : ret-1
+  return self._save_argscnt[ignorepat]
 endfunction
 "}}}
 function! s:Cmpl.should_optcmpl() "{{{

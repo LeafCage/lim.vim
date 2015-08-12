@@ -93,6 +93,13 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	self.argleadに一致する。
 
 
+	Cmpl.count_inputted([{ignorepat}])
+	現在入力中のコマンドがいくつ完成した引数を持ってるかを返す。現在入力補
+	完中の引数は数に含めない。
+	カーソルが行末にないときでもコマンドライン全体の引数を参照する他は
+	|Cmpl.count_lefts()|と同等である。
+
+
 	Cmpl.should_optcmpl()
 	現在のArgleadが|lim#cmddef#newCmpl()|で初期化された shortoptbgn
 	longoptbgn のパターンのいずれかマッチすれば1を返す。
