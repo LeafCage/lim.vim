@@ -202,11 +202,19 @@ function! lim#cmddef#newCmpl(cmdline, cursorpos, ...) abort "{{{
   let behavior = a:0 ? a:1 : {}
   let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
   let obj._shortoptbgn = get(behavior, 'shortoptbgn', '-')
-  let obj.cmdline = a:cmdline
-  let obj.cursorpos = a:cursorpos
-  let obj._is_on_edge = a:cmdline[a:cursorpos-1]!=' ' ? 0 : a:cmdline[a:cursorpos-2]!='\' || a:cmdline[a:cursorpos-3]=='\'
-  let [obj.command; obj.inputs] = lim#cmddef#split_into_words(a:cmdline)
-  let obj.leftwords = lim#cmddef#split_into_words(a:cmdline[:(a:cursorpos-1)])[1:]
+  let obj.is_cmdwin = exists('*getcmdwintype') ? getcmdwintype()!='' : bufname('%') ==# '[Command Line]'
+  if v:version > 703 || v:version==703 && has('patch1260') || !obj.is_cmdwin
+    let obj.cmdline = a:cmdline
+    let obj.cursorpos = a:cursorpos
+  else
+    let cursorpos = col('.')-1
+    let cmdline = getline('.')
+    let obj.cmdline = cmdline[: cursorpos-1]. a:cmdline. cmdline[cursorpos :]
+    let obj.cursorpos = cursorpos + len(a:cmdline)
+  end
+  let obj._is_on_edge = obj.cmdline[obj.cursorpos-1]!=' ' ? 0 : obj.cmdline[obj.cursorpos-2]!='\' || obj.cmdline[obj.cursorpos-3]=='\'
+  let [obj.command; obj.inputs] = lim#cmddef#split_into_words(obj.cmdline)
+  let obj.leftwords = lim#cmddef#split_into_words(obj.cmdline[:(obj.cursorpos-1)])[1:]
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
   let obj._save_leftargscnt = {}

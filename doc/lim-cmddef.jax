@@ -53,7 +53,7 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 	Cmpl.cmdline			(文字列)
 		渡された引数{cmdline}に等しい。コマンドライン全体を表す。
 
-	Cmpl.cursorpos		(数値)
+	Cmpl.cursorpos			(数値)
 		渡された引数{cursorpos}に等しい。カーソル位置(バイト単位のイン
 		デックス)を表す。コマンドライン先頭からカーソル位置までの文字
 		列長に等しい。
@@ -70,6 +70,12 @@ lim#cmddef#newCmpl({cmdline}, {cursorpos}, [{behavior}])
 
 	Cmpl.command			(文字列)
 		入力されている文字列の内、コマンドにあたる部分。
+
+	Cmpl.is_cmdwin			(数値)
+		この補完がコマンドラインウィンドウ|cmdwin|にて行われているのな
+		ら 1、そうでなければ 0 を返す。
+		expand("%") などの結果に影響する (コマンドラインウィンドウでは
+		代わりに expand("#") を使う必要がある)。
 
 	--------~
 	Cmpl.has_bang()
