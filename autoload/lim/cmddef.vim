@@ -7,7 +7,10 @@ let s:TYPE_STR = type('')
 let s:TYPE_NUM = type(0)
 let s:TYPE_FLOAT = type(0.0)
 
-"Misc:
+function! s:remove_cmdrange(cmdline) "{{{
+  return substitute(a:cmdline, '^[,; ]*\%(\%(\d\+\|[.$%]\|\\[/?&]\|/.\{-}/\|?.\{-}?\|''[''`"^.<>()[\]{}[:alnum:]]\)\s*\%([+-]\d*\s*\)\?[,; ]*\)*', '', '')
+endfunction
+"}}}
 function! s:_matches(pat, list) "{{{
   if type(a:pat)==s:TYPE_LIST
     return filter(a:list, 'index(a:pat, v:val)!=-1')
@@ -213,7 +216,7 @@ function! lim#cmddef#newCmpl(cmdline, cursorpos, ...) abort "{{{
     let obj.cursorpos = cursorpos + len(a:cmdline)
   end
   let obj._is_on_edge = obj.cmdline[obj.cursorpos-1]!=' ' ? 0 : obj.cmdline[obj.cursorpos-2]!='\' || obj.cmdline[obj.cursorpos-3]=='\'
-  let [obj.command; obj.inputs] = lim#cmddef#split_into_words(obj.cmdline)
+  let [obj.command; obj.inputs] = lim#cmddef#split_into_words(s:remove_cmdrange(obj.cmdline))
   let obj.leftwords = lim#cmddef#split_into_words(obj.cmdline[:(obj.cursorpos-1)])[1:]
   let obj.arglead = obj._is_on_edge ? '' : obj.leftwords[-1]
   let obj.preword = obj._is_on_edge ? get(obj.leftwords, -1, '') : get(obj.leftwords, -2, '')
