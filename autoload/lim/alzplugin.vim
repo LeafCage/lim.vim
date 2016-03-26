@@ -4,6 +4,7 @@ let s:save_cpo = &cpo| set cpo&vim
 "=============================================================================
 let s:TYPE_STR = type('')
 let s:TYPE_LIST = type([])
+let s:NEUTRAL_KEYMAPPINGMODES = {}
 let s:AUTOCMDS_PAT = 'au\%[tocmd]\s\+\%(\(\S\+\)\s\+\)\?\(\%('.
   \ '\%(
   \Buf\%(Add\|Create\|Delete\|Enter\|FileP\%(ost\|re\)\|Hidden\|Leave\|New\%(File\)\?\|Read\%(\%(Cmd\|P\%(ost\|re\)\)\)\?\|Unload\|W\%(i\%(n\%(Enter\|Leave\)\|peout\)\|rite\%(\%(Cmd\|P\%(ost\|re\)\)\)\?\)\)
@@ -191,7 +192,7 @@ function! s:_combine_keymapping(collectorkeymappings, lhs, modes) "{{{
   endif
   for m in ['n', 'i', 'x', 's', 'o', 'c']
     if has_key(a:collectorkeymappings[a:lhs], m)
-      let a:modes[m] = get(a:modes, m, s:_neutral_keymappingmodes())
+      let a:modes[m] = get(a:modes, m, s:NEUTRAL_KEYMAPPINGMODES)
       call extend(a:modes[m].rhs, a:collectorkeymappings[a:lhs][m].rhs)
     endif
   endfor
