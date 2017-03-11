@@ -352,6 +352,9 @@ endfunction
 "--------------------------------------
 let s:Parser = {}
 function! lim#cmddef#newParser(args, ...) "{{{
+  if type(a:args) != s:TYPE_LIST
+    throw 'a:args must be List: '. string(a:args)
+  end
   let obj = copy(s:Parser)
   let behavior = a:0 ? a:1 : {}
   let obj._longoptbgn = get(behavior, 'longoptbgn', '--')
@@ -365,8 +368,7 @@ function! lim#cmddef#newParser(args, ...) "{{{
     let obj._solve_longopt = s:func._solve_longopt_nomal
     let obj._solve_shortopt = s:func._solve_shortopt_normal
   end
-  let obj.args = a:args
-  let obj.args_original = copy(a:args)
+  let obj.args = copy(a:args)
   return obj
 endfunction
 "}}}
